@@ -7,7 +7,7 @@
     "build": "npx vite build",
     "dev": "npx vite",
     "preview": "npx vite preview",
-    "backend": "cd ../Corpfront/backend && source venv/bin/activate && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+    "backend": "cd ../Corpfront/backend && ./run.sh"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

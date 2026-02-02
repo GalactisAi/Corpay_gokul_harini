@@ -25,7 +25,7 @@ export function RevenuePage() {
   
   // Payments manual entry state
   const [paymentCardTitle, setPaymentCardTitle] = useState(
-    localStorage.getItem('paymentCardTitle') || 'Payments Processed Today'
+    localStorage.getItem('paymentCardTitle') || 'Customisable card 1'
   );
   const [manualPaymentAmount, setManualPaymentAmount] = useState('');
   const [manualPaymentTransactions, setManualPaymentTransactions] = useState('');
@@ -33,11 +33,25 @@ export function RevenuePage() {
   
   // System performance manual entry state
   const [systemPerformanceCardTitle, setSystemPerformanceCardTitle] = useState(
-    localStorage.getItem('systemPerformanceCardTitle') || 'System Performance'
+    localStorage.getItem('systemPerformanceCardTitle') || 'Customisable card 2'
   );
   const [manualUptime, setManualUptime] = useState('');
   const [manualSuccessRate, setManualSuccessRate] = useState('');
   const [isSavingSystem, setIsSavingSystem] = useState(false);
+
+  // Customizable subtitles (labels shown on front card: subtitle 1 = amount label, subtitle 2 = transactions label)
+  const [paymentAmountSubtitle, setPaymentAmountSubtitle] = useState(
+    () => localStorage.getItem('paymentAmountSubtitle') || 'Amount Processed'
+  );
+  const [paymentTransactionsSubtitle, setPaymentTransactionsSubtitle] = useState(
+    () => localStorage.getItem('paymentTransactionsSubtitle') || 'Transactions'
+  );
+  const [systemUptimeSubtitle, setSystemUptimeSubtitle] = useState(
+    () => localStorage.getItem('systemUptimeSubtitle') || 'Enter uptime percentage (e.g., 99.985)'
+  );
+  const [systemSuccessRateSubtitle, setSystemSuccessRateSubtitle] = useState(
+    () => localStorage.getItem('systemSuccessRateSubtitle') || 'Enter success rate percentage (e.g., 99.62)'
+  );
   
   // Share price state
   const [sharePrice, setSharePrice] = useState<{ price: number; change: number; changePercent: number; timestamp: string } | null>(null);
@@ -74,8 +88,22 @@ export function RevenuePage() {
   useEffect(() => {
     localStorage.setItem('systemPerformanceCardTitle', systemPerformanceCardTitle);
   }, [systemPerformanceCardTitle]);
+
+  // Persist customizable subtitles to localStorage
+  useEffect(() => {
+    localStorage.setItem('paymentAmountSubtitle', paymentAmountSubtitle);
+  }, [paymentAmountSubtitle]);
+  useEffect(() => {
+    localStorage.setItem('paymentTransactionsSubtitle', paymentTransactionsSubtitle);
+  }, [paymentTransactionsSubtitle]);
+  useEffect(() => {
+    localStorage.setItem('systemUptimeSubtitle', systemUptimeSubtitle);
+  }, [systemUptimeSubtitle]);
+  useEffect(() => {
+    localStorage.setItem('systemSuccessRateSubtitle', systemSuccessRateSubtitle);
+  }, [systemSuccessRateSubtitle]);
   
-  // Load card titles from backend config on mount
+  // Load card titles and subtitles from backend config on mount
   useEffect(() => {
     const loadCardTitlesFromBackend = async () => {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -94,6 +122,18 @@ export function RevenuePage() {
         if (data.dashboard_system_title) {
           setSystemPerformanceCardTitle(data.dashboard_system_title);
         }
+        if (data.dashboard_payments_amount_subtitle != null && data.dashboard_payments_amount_subtitle !== '') {
+          setPaymentAmountSubtitle(data.dashboard_payments_amount_subtitle);
+        }
+        if (data.dashboard_payments_transactions_subtitle != null && data.dashboard_payments_transactions_subtitle !== '') {
+          setPaymentTransactionsSubtitle(data.dashboard_payments_transactions_subtitle);
+        }
+        if (data.dashboard_system_uptime_subtitle != null && data.dashboard_system_uptime_subtitle !== '') {
+          setSystemUptimeSubtitle(data.dashboard_system_uptime_subtitle);
+        }
+        if (data.dashboard_system_success_rate_subtitle != null && data.dashboard_system_success_rate_subtitle !== '') {
+          setSystemSuccessRateSubtitle(data.dashboard_system_success_rate_subtitle);
+        }
       } catch (error) {
         console.error('Failed to load card titles from backend config:', error);
       }
@@ -102,10 +142,13 @@ export function RevenuePage() {
     loadCardTitlesFromBackend();
   }, []);
 
-  const saveCardTitlesToBackend = async () => {
+  const saveCardTitlesToBackend = async (): Promise<boolean> => {
     const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      toast.error('Please log in to save card titles and subtitles to the main dashboard.');
+      return false;
+    }
 
     try {
       await axios.put(
@@ -113,6 +156,10 @@ export function RevenuePage() {
         {
           dashboard_payments_title: paymentCardTitle,
           dashboard_system_title: systemPerformanceCardTitle,
+          dashboard_payments_amount_subtitle: paymentAmountSubtitle,
+          dashboard_payments_transactions_subtitle: paymentTransactionsSubtitle,
+          dashboard_system_uptime_subtitle: systemUptimeSubtitle,
+          dashboard_system_success_rate_subtitle: systemSuccessRateSubtitle,
         },
         {
           headers: {
@@ -122,9 +169,12 @@ export function RevenuePage() {
           timeout: 10000,
         }
       );
+      toast.success('Card titles and subtitles saved. Main dashboard will update within 30 seconds or after refresh.');
+      return true;
     } catch (error) {
       console.error('Failed to save card titles to backend config:', error);
       toast.error('Failed to save card titles to backend');
+      return false;
     }
   };
   
@@ -935,6 +985,7 @@ export function RevenuePage() {
       }
 
       toast.success('Payment data saved successfully');
+      await saveCardTitlesToBackend();
       setManualPaymentAmount('');
       setManualPaymentTransactions('');
       setIsSavingPayment(false);
@@ -1063,16 +1114,16 @@ export function RevenuePage() {
       </div>
 
       <Tabs defaultValue="manual" className="w-full">
-        <TabsList className="bg-white/10">
-          <TabsTrigger value="manual" className="data-[state=active]:bg-pink-600">
+        <TabsList className="bg-white/10 text-white">
+          <TabsTrigger value="manual" className="text-white data-[state=active]:bg-pink-600 data-[state=active]:text-white">
             <Plus className="w-4 h-4 mr-2" />
             Manual Entry
           </TabsTrigger>
-          <TabsTrigger value="charts" className="data-[state=active]:bg-pink-600">
+          <TabsTrigger value="charts" className="text-white data-[state=active]:bg-pink-600 data-[state=active]:text-white">
             <PieChart className="w-4 h-4 mr-2" />
             Charts
           </TabsTrigger>
-          <TabsTrigger value="trends" className="data-[state=active]:bg-pink-600">
+          <TabsTrigger value="trends" className="text-white data-[state=active]:bg-pink-600 data-[state=active]:text-white">
             <TrendingUp className="w-4 h-4 mr-2" />
             Revenue Trends
           </TabsTrigger>
@@ -1170,10 +1221,11 @@ export function RevenuePage() {
               <CardHeader>
                 <CardTitle className="text-white">{paymentCardTitle}</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Enter today's payment data manually for quick updates
+                  Enter data manually for quick updates
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* 1. Card title – changes "Payments Processed Today" name on the front card */}
                 <div className="space-y-2">
                   <Label htmlFor="paymentCardTitle" className="text-white">Card Title</Label>
                   <Input
@@ -1181,33 +1233,66 @@ export function RevenuePage() {
                     type="text"
                     value={paymentCardTitle}
                     onChange={(e) => setPaymentCardTitle(e.target.value)}
+                    onBlur={() => saveCardTitlesToBackend()}
+                    className="bg-white/10 border-white/20 text-white"
+                    placeholder="e.g., Customisable card 1"
+                  />
+                </div>
+
+                {/* 2. Subtitle 1 – label shown on front card for amount (e.g. "Amount Processed") */}
+                <div className="space-y-2">
+                  <Label htmlFor="paymentAmountSubtitle" className="text-white">Subtitle 1</Label>
+                  <Input
+                    id="paymentAmountSubtitle"
+                    type="text"
+                    placeholder="e.g., Amount Processed"
+                    value={paymentAmountSubtitle}
+                    onChange={(e) => setPaymentAmountSubtitle(e.target.value)}
                     onBlur={saveCardTitlesToBackend}
                     className="bg-white/10 border-white/20 text-white"
                   />
                 </div>
 
+                {/* 3. Subtitle 2 – label shown on front card for transactions (e.g. "Transactions") */}
                 <div className="space-y-2">
-                  <Label htmlFor="paymentAmount" className="text-white">Amount Processed (in Crores)</Label>
+                  <Label htmlFor="paymentTransactionsSubtitle" className="text-white">Subtitle 2</Label>
+                  <Input
+                    id="paymentTransactionsSubtitle"
+                    type="text"
+                    placeholder="e.g., Transactions"
+                    value={paymentTransactionsSubtitle}
+                    onChange={(e) => setPaymentTransactionsSubtitle(e.target.value)}
+                    onBlur={saveCardTitlesToBackend}
+                    className="bg-white/10 border-white/20 text-white"
+                  />
+                </div>
+
+                {/* 4. Value for subtitle 1 – number shown under subtitle 1 on card (e.g. ₹12.0 Cr) */}
+                <div className="space-y-2">
+                  <Label htmlFor="paymentAmount" className="text-white">Value for subtitle 1</Label>
                   <Input
                     id="paymentAmount"
-                    type="number"
-                    step="0.1"
+                    type="text"
                     value={manualPaymentAmount}
                     onChange={(e) => setManualPaymentAmount(e.target.value)}
                     className="bg-white/10 border-white/20 text-white"
+                    placeholder="e.g., 12"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Enter value in crores (e.g., 42.8 for ₹42.8 Cr)</p>
+                  <p className="text-xs text-gray-400">Shown on card as value under &quot;{paymentAmountSubtitle || 'Subtitle 1'}&quot; (e.g. ₹12.0 Cr)</p>
                 </div>
 
+                {/* 5. Value for subtitle 2 – number shown under subtitle 2 on card (e.g. 12) */}
                 <div className="space-y-2">
-                  <Label htmlFor="paymentTransactions" className="text-white">Transaction Count</Label>
+                  <Label htmlFor="paymentTransactions" className="text-white">Value for subtitle 2</Label>
                   <Input
                     id="paymentTransactions"
-                    type="number"
+                    type="text"
                     value={manualPaymentTransactions}
                     onChange={(e) => setManualPaymentTransactions(e.target.value)}
                     className="bg-white/10 border-white/20 text-white"
+                    placeholder="e.g., 12"
                   />
+                  <p className="text-xs text-gray-400">Shown on card as value under &quot;{paymentTransactionsSubtitle || 'Subtitle 2'}&quot;</p>
                 </div>
 
                 <Button 
@@ -1215,7 +1300,7 @@ export function RevenuePage() {
                   disabled={isSavingPayment}
                   className="w-full bg-pink-600 hover:bg-pink-700"
                 >
-                  {isSavingPayment ? 'Saving...' : 'Save Payment Data'}
+                  {isSavingPayment ? 'Updating...' : 'Update'}
                 </Button>
               </CardContent>
             </Card>
@@ -1225,7 +1310,7 @@ export function RevenuePage() {
               <CardHeader>
                 <CardTitle className="text-white">{systemPerformanceCardTitle}</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Enter system performance metrics manually for quick updates
+                  Enter data manually for quick updates
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1238,33 +1323,60 @@ export function RevenuePage() {
                     onChange={(e) => setSystemPerformanceCardTitle(e.target.value)}
                     onBlur={saveCardTitlesToBackend}
                     className="bg-white/10 border-white/20 text-white"
+                    placeholder="e.g., Customisable card 2"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="uptime" className="text-white">System Uptime (%)</Label>
+                  <Label htmlFor="systemUptimeSubtitle" className="text-white">Subtitle 1</Label>
+                  <Input
+                    id="systemUptimeSubtitle"
+                    type="text"
+                    placeholder="e.g., Uptime"
+                    value={systemUptimeSubtitle}
+                    onChange={(e) => setSystemUptimeSubtitle(e.target.value)}
+                    onBlur={saveCardTitlesToBackend}
+                    className="bg-white/10 border-white/20 text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="systemSuccessRateSubtitle" className="text-white">Subtitle 2</Label>
+                  <Input
+                    id="systemSuccessRateSubtitle"
+                    type="text"
+                    placeholder="e.g., Success Rate"
+                    value={systemSuccessRateSubtitle}
+                    onChange={(e) => setSystemSuccessRateSubtitle(e.target.value)}
+                    onBlur={saveCardTitlesToBackend}
+                    className="bg-white/10 border-white/20 text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="uptime" className="text-white">Value for subtitle 1</Label>
                   <Input
                     id="uptime"
-                    type="number"
-                    step="0.001"
+                    type="text"
                     value={manualUptime}
                     onChange={(e) => setManualUptime(e.target.value)}
                     className="bg-white/10 border-white/20 text-white"
+                    placeholder="e.g., 12"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Enter uptime percentage (e.g., 99.985)</p>
+                  <p className="text-xs text-gray-400">Shown on card as value under &quot;{systemUptimeSubtitle || 'Subtitle 1'}&quot;</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="successRate" className="text-white">Success Rate (%)</Label>
+                  <Label htmlFor="successRate" className="text-white">Value for subtitle 2</Label>
                   <Input
                     id="successRate"
-                    type="number"
-                    step="0.01"
+                    type="text"
                     value={manualSuccessRate}
                     onChange={(e) => setManualSuccessRate(e.target.value)}
                     className="bg-white/10 border-white/20 text-white"
+                    placeholder="e.g., 12"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Enter success rate percentage (e.g., 99.62)</p>
+                  <p className="text-xs text-gray-400">Shown on card as value under &quot;{systemSuccessRateSubtitle || 'Subtitle 2'}&quot;</p>
                 </div>
 
                 <Button 
@@ -1272,7 +1384,7 @@ export function RevenuePage() {
                   disabled={isSavingSystem}
                   className="w-full bg-pink-600 hover:bg-pink-700"
                 >
-                  {isSavingSystem ? 'Saving...' : 'Save System Performance Data'}
+                  {isSavingSystem ? 'Updating...' : 'Update'}
                 </Button>
               </CardContent>
             </Card>

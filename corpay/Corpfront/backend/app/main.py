@@ -66,7 +66,15 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan - start background tasks on startup"""
     # Initialize default admin user
     init_default_admin()
-    
+
+    # Clear newsroom cache so first request after restart gets fresh data (with dates)
+    try:
+        from app.utils.cache import delete
+        for limit in (5, 12):
+            delete(f"newsroom_{limit}")
+    except Exception:
+        pass
+
     # Start background task for LinkedIn sync
     sync_task = asyncio.create_task(run_periodic_sync(interval_minutes=30))
     

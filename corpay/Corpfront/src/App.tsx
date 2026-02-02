@@ -7,6 +7,7 @@ import { EmployeeMilestone } from './components/EmployeeMilestone';
 import { CompanyAnnouncement } from './components/CompanyAnnouncement';
 import { NewsroomCard } from './components/NewsroomCard';
 import { ResourceCard } from './components/ResourceCard';
+import { CaseStudyCard } from './components/CaseStudyCard';
 import { FullScreenSlideshow } from './components/FullScreenSlideshow';
 import { dashboardApi } from './services/api';
 import corpayLogo from './assets/895e861462df910e5a72623a9b8e8a744f2ab348.png';
@@ -14,13 +15,53 @@ import crossBorderGlimpse from './assets/aaf95357c3595e79ededa176ac81f9fc76f886b
 import backgroundPattern from './assets/8a99135dee321789a4c9c35b37279ec88120fc47.png';
 import axios from 'axios';
 
-/** Extract a date string from title/excerpt when API doesn't return a separate date (e.g. "on February 4, 2026"). */
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Return true only if s looks like a real date; reject junk like "is showing". */
+function isValidDateString(s: string): boolean {
+  if (!s || typeof s !== 'string') return false;
+  const t = s.trim().toLowerCase();
+  if (['is showing', 'showing', 'show', 'view', 'read more', '—', '-'].includes(t) || t.length > 50) return false;
+  const hasYear = /\b(19|20)\d{2}\b/.test(s);
+  const hasMonthOrNumeric = /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}/i.test(s) || /\d{1,2}[\s/\-]\d{1,2}[\s/\-]\d{2,4}/.test(s);
+  return hasYear && (hasMonthOrNumeric || /^\d{4}-\d{2}-\d{2}/.test(s));
+}
+
+/** Extract a date string from title/excerpt when API doesn't return a separate date. */
 function extractDateFromTitle(text: string): string {
   if (!text || typeof text !== 'string') return '';
+  // Month name + day + year (e.g. "February 4, 2026", "Jan 15, 2025")
   const m = text.match(
     /\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan\.?|Feb\.?|Mar\.?|Apr\.?|Jun\.?|Jul\.?|Aug\.?|Sep\.?|Oct\.?|Nov\.?|Dec\.?)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\b/i
   );
-  return m ? m[0].trim() : '';
+  if (m) return m[0].trim();
+  // ISO date YYYY-MM-DD
+  const iso = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+  if (iso) {
+    const month = MONTH_NAMES[parseInt(iso[2], 10) - 1];
+    return month ? `${month} ${parseInt(iso[3], 10)}, ${iso[1]}` : iso[0];
+  }
+  return '';
+}
+
+/** Extract a display date from article URL (e.g. /2025/01/15/article-slug). */
+function extractDateFromUrl(url: string): string {
+  if (!url || typeof url !== 'string') return '';
+  const m = url.match(/(20\d{2})[-/](\d{1,2})[-/](\d{1,2})(?:\/|$|-|\s)/);
+  if (!m) return '';
+  const [, year, monthStr, dayStr] = m;
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+  const monthName = MONTH_NAMES[month - 1];
+  return monthName ? `${monthName} ${day}, ${year}` : '';
+}
+
+/** Pick the best display date: API date (publication date) or URL only. Do not use title/excerpt — headlines often contain the event date (e.g. "Results on February 4, 2026"), not the publication date (e.g. January 21, 2026). */
+function newsroomDisplayDate(item: { date?: string; title?: string; excerpt?: string; url?: string }): string {
+  const raw = (item.date || '').trim();
+  if (raw && isValidDateString(raw)) return raw;
+  return extractDateFromUrl(item.url || '');
 }
 
 const revenueData = [
@@ -137,6 +178,26 @@ const crossBorderPosts = [
   },
 ];
 
+// Fallback when customer-stories API fails or returns empty (e.g. backend not running)
+const fallbackCaseStudies = [
+  { title: 'Omni Hotels & Resorts', url: 'https://www.corpay.com/resources/customer-stories/omni-hotels-and-resorts', category: 'Commercial Cards', excerpt: 'A luxury hotel brand earns $1.3M in rebates and cuts check payments by over 50%.' },
+  { title: 'Thirty Madison', url: 'https://www.corpay.com/resources/customer-stories/thirty-madison', category: 'Payments Automation', excerpt: 'Centralized AP with Corpay to manage ~10 entities and multiple bank accounts in one place.' },
+  { title: 'Ewing Automotive', url: 'https://www.corpay.com/resources/customer-stories/ewing-automotive', category: 'Commercial Cards', excerpt: 'Modernized AP, reduced fraud risk, and earned monthly rebates with Corpay.' },
+  { title: 'Scaling Internet Company', url: 'https://www.corpay.com/resources/customer-stories', category: 'Corpay Complete', excerpt: 'Savings of $3.5M per month with Corpay Complete\'s end-to-end functionality.' },
+];
+
+// Fallback when resources/newsroom API fails or returns empty (8 items to match display count)
+const fallbackResources = [
+  { title: 'Case Study: Global Transport Inc.', excerpt: 'How we streamlined their fleet payments.' },
+  { title: 'Whitepaper: Digital Transformation', excerpt: 'Key strategies for enterprise success.' },
+  { title: 'Corpay Resources & Newsroom', excerpt: 'Latest articles and insights from Corpay.' },
+  { title: 'Guide: Commercial Card Best Practices', excerpt: 'Optimize spend and control with commercial cards.' },
+  { title: 'Case Study: Hospitality Payments', excerpt: 'Simplifying cross-border payments for hotels.' },
+  { title: 'Whitepaper: FX Risk Management', excerpt: 'Hedging strategies for treasury teams.' },
+  { title: 'Webinar: Digital Wallets & B2B', excerpt: 'Adoption trends and integration options.' },
+  { title: 'Blog: Treasury Automation', excerpt: 'From manual to automated reconciliation.' },
+];
+
 const employeeMilestones = [
   {
     name: "Sarah Chen's Work Anniversary",
@@ -227,6 +288,7 @@ export default function App() {
     avatar: string;
     borderColor: string;
     backgroundColor: string;
+    emoji?: string;
   }>>([]);
   const [payments, setPayments] = useState({ amount_processed: 428000000, transaction_count: 19320 });
   const [systemPerformance, setSystemPerformance] = useState({ uptime_percentage: 99.985, success_rate: 99.62 });
@@ -244,12 +306,23 @@ export default function App() {
     category?: string;
     excerpt?: string;
   }>>([]);
+  const [caseStudyItems, setCaseStudyItems] = useState<Array<{
+    title: string;
+    url: string;
+    date?: string;
+    category?: string;
+    excerpt?: string;
+  }>>([]);
   const [cardTitles, setCardTitles] = useState<{
     payments: string;
     systemPerformance: string;
+    paymentsAmountSubtitle: string;
+    paymentsTransactionsSubtitle: string;
   }>({
     payments: 'Payments Processed Today',
     systemPerformance: 'System Performance',
+    paymentsAmountSubtitle: 'Amount Processed',
+    paymentsTransactionsSubtitle: 'Transactions',
   });
   
   // Slideshow state
@@ -319,10 +392,19 @@ export default function App() {
   const fetchCardTitles = async () => {
     try {
       const res = await dashboardApi.getCardTitles();
-      const data = res.data || {};
+      const data = res?.data ?? {};
+      const paymentsTitle = data.payments_title ?? 'Payments Processed Today';
+      const systemTitle = data.system_performance_title ?? 'System Performance';
+      const amountSub = data.payments_amount_subtitle ?? 'Amount Processed';
+      const transactionsSub = data.payments_transactions_subtitle ?? 'Transactions';
+      if (import.meta.env.DEV && (amountSub !== 'Amount Processed' || transactionsSub !== 'Transactions')) {
+        console.log('[CardTitles] Subtitles from API:', { amountSub, transactionsSub });
+      }
       setCardTitles({
-        payments: data.payments_title || 'Payments Processed Today',
-        systemPerformance: data.system_performance_title || 'System Performance',
+        payments: paymentsTitle,
+        systemPerformance: systemTitle,
+        paymentsAmountSubtitle: amountSub,
+        paymentsTransactionsSubtitle: transactionsSub,
       });
     } catch (error) {
       console.error('[CardTitles] Error fetching from API:', error);
@@ -345,6 +427,7 @@ export default function App() {
           systemRes,
           newsroomRes,
           resourcesRes,
+          caseStudiesRes,
         ] = await Promise.allSettled([
           dashboardApi.getRevenue(),
           dashboardApi.getSharePrice(),
@@ -356,7 +439,8 @@ export default function App() {
           dashboardApi.getPayments(),
           dashboardApi.getSystemPerformance(),
           dashboardApi.getNewsroom(12),
-          dashboardApi.getResourcesNewsroom(4),
+          dashboardApi.getResourcesNewsroom(8),
+          dashboardApi.getCustomerStories(12),
         ]);
 
         if (revenueRes.status === 'fulfilled') {
@@ -446,6 +530,13 @@ export default function App() {
         }
         if (employeesRes.status === 'fulfilled') {
           const employeesData = employeesRes.value.data || [];
+          const MILESTONE_EMOJI: Record<string, string> = {
+            anniversary: '📅',
+            promotion: '📈',
+            birthday: '🎂',
+            new_hire: '✨',
+            achievement: '🏆'
+          };
           // Transform API response to match component format
           const transformedMilestones = employeesData.map((emp: any) => {
             // Construct full URL for avatar if path exists
@@ -466,7 +557,8 @@ export default function App() {
               description: emp.description || '',
               avatar: avatarUrl,
               borderColor: emp.border_color || '#981239',
-              backgroundColor: emp.background_color || '#fef5f8'
+              backgroundColor: emp.background_color || '#fef5f8',
+              emoji: MILESTONE_EMOJI[emp.milestone_type] || '🎉'
             };
           });
           setMilestonesList(transformedMilestones);
@@ -533,7 +625,17 @@ export default function App() {
             }),
           }).catch(() => {});
           // #endregion agent log
-          setResourceItems(resourcesRes.value.data || []);
+          const data = resourcesRes.value.data;
+          const list = Array.isArray(data) ? data : [];
+          setResourceItems(list.length > 0 ? list : fallbackResources);
+        } else {
+          setResourceItems(fallbackResources);
+        }
+        if (caseStudiesRes.status === 'fulfilled') {
+          const data = caseStudiesRes.value.data || [];
+          setCaseStudyItems(data.length > 0 ? data : fallbackCaseStudies);
+        } else {
+          setCaseStudyItems(fallbackCaseStudies);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -544,6 +646,9 @@ export default function App() {
 
     fetchData();
     fetchCardTitles();
+
+    // Refresh card titles (and subtitles) every 30s so grey labels update when admin changes them
+    const cardTitlesInterval = setInterval(fetchCardTitles, 30000);
     
     // Refresh data every 5 minutes
     const interval = setInterval(fetchData, 5 * 60 * 1000);
@@ -801,6 +906,13 @@ export default function App() {
         const employeesRes = await dashboardApi.getEmployees(20);
         if (employeesRes && employeesRes.data) {
           const employeesData = employeesRes.data || [];
+          const MILESTONE_EMOJI: Record<string, string> = {
+            anniversary: '📅',
+            promotion: '📈',
+            birthday: '🎂',
+            new_hire: '✨',
+            achievement: '🏆'
+          };
           // Transform API response to match component format
           const transformedMilestones = employeesData.map((emp: any) => {
             // Construct full URL for avatar if path exists
@@ -821,7 +933,8 @@ export default function App() {
               description: emp.description || '',
               avatar: avatarUrl,
               borderColor: emp.border_color || '#981239',
-              backgroundColor: emp.background_color || '#fef5f8'
+              backgroundColor: emp.background_color || '#fef5f8',
+              emoji: MILESTONE_EMOJI[emp.milestone_type] || '🎉'
             };
           });
           setMilestonesList(transformedMilestones);
@@ -880,6 +993,7 @@ export default function App() {
     
     return () => {
       clearInterval(interval);
+      clearInterval(cardTitlesInterval);
       clearInterval(revenueInterval);
       clearInterval(sharePriceInterval);
       clearInterval(proportionsInterval);
@@ -1211,6 +1325,7 @@ export default function App() {
                     avatar={milestone.avatar}
                     borderColor={milestone.borderColor}
                     backgroundColor={milestone.backgroundColor}
+                    emoji={milestone.emoji}
                   />
                 ))}
               </div>
@@ -1225,9 +1340,9 @@ export default function App() {
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0085C2' }}></div>
                 </div>
                 <div className="flex items-center justify-center flex-1 gap-8">
-                  {/* Today's Payments */}
+                  {/* Grey text above value = Subtitle 1 (from admin); value = amount in Cr */}
                   <div className="text-center space-y-2 flex-1">
-                    <p className="text-gray-500" style={{ fontSize: '11px', fontWeight: 500 }}>Amount Processed</p>
+                    <p className="text-gray-500" style={{ fontSize: '11px', fontWeight: 500 }}>{cardTitles.paymentsAmountSubtitle}</p>
                     <p style={{ fontWeight: 700, color: 'rgb(152, 18, 57)', fontSize: '32px', lineHeight: '1' }}>
                       ₹{(payments.amount_processed / 10000000).toFixed(1)} Cr
                     </p>
@@ -1236,9 +1351,9 @@ export default function App() {
                   {/* Vertical Divider */}
                   <div className="w-px h-16" style={{ backgroundColor: '#E6E8E7' }}></div>
 
-                  {/* Transactions */}
+                  {/* Grey text above value = Subtitle 2 (from admin); value = transaction count */}
                   <div className="text-center space-y-2 flex-1">
-                    <p className="text-gray-500" style={{ fontSize: '11px', fontWeight: 500 }}>Transactions</p>
+                    <p className="text-gray-500" style={{ fontSize: '11px', fontWeight: 500 }}>{cardTitles.paymentsTransactionsSubtitle}</p>
                     <p style={{ fontWeight: 700, color: '#230C18', fontSize: '32px', lineHeight: '1' }}>
                       {payments.transaction_count.toLocaleString()}
                     </p>
@@ -1277,7 +1392,7 @@ export default function App() {
           </div>
 
           {/* Third Row - Fixed row height so Newsroom matches Resources column; list scrolls inside */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch" style={{ height: '420px' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch min-h-0" style={{ height: '420px' }}>
             {/* Corpay Newsroom - fills row height; list scrolls inside */}
             <div className="min-h-0 flex flex-col h-full overflow-hidden">
               <div
@@ -1294,14 +1409,14 @@ export default function App() {
                 </div>
                 <div
                   ref={newsroomScrollRef}
-                  className="space-y-3 flex-1 min-h-0 overflow-y-auto newsroom-scroll pr-1"
-                  style={{ scrollbarGutter: 'stable' }}
+                  className="space-y-3 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                 {newsroomItems.map((item, index) => (
                   <CompanyAnnouncement
                     key={index}
                     title={item.title}
-                    date={item.date?.trim() || extractDateFromTitle(item.title) || extractDateFromTitle(item.excerpt || '') || ''}
+                    date={newsroomDisplayDate(item)}
                     description={item.excerpt || ''}
                     backgroundColor={index % 2 === 0 ? 'rgba(152, 18, 57, 0.08)' : 'rgba(61, 22, 40, 0.07)'}
                     link={item.url}
@@ -1318,43 +1433,20 @@ export default function App() {
               </div>
             </div>
 
-            {/* Right column: Case Studies with Resources - fixed height so row height matches */}
-            <div className="flex flex-col gap-4 h-full min-h-[420px]">
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col">
-                <p className="mb-4" style={{ fontWeight: 700, color: '#3D1628', fontSize: '18px' }}>Case Studies</p>
-                <div className="flex gap-4 overflow-x-auto">
-                  <NewsroomCard 
-                    title="Corpay Announces Record Q3 Earnings"
-                    image="https://images.unsplash.com/photo-1606836591695-4d58a73eba1e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMG1lZXRpbmclMjBvZmZpY2V8ZW58MXx8fHwxNzYzMzUzMTI2fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-                  />
-                  <NewsroomCard 
-                    title="Innovation in Fintech: A Deep Dive"
-                    image="https://images.unsplash.com/photo-1707075891545-41b982930351?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW50ZWNoJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-                  />
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col overflow-hidden flex-1 min-h-0">
+            {/* Right column: Resources only - fills row height; scrolls inside */}
+            <div className="min-h-0 flex flex-col h-full overflow-hidden">
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col overflow-hidden flex-1 min-h-0 h-full">
                 <p className="mb-3 shrink-0" style={{ fontWeight: 700, color: '#3D1628', fontSize: '18px' }}>Resources</p>
                 <div
                   ref={resourcesScrollRef}
-                  className="overflow-y-auto overflow-x-hidden flex-1 min-h-0 rounded space-y-4"
+                  className="overflow-y-auto overflow-x-hidden flex-1 min-h-0 rounded space-y-4 scrollbar-hide"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  {(resourceItems.length > 0 ? resourceItems.slice(0, 4) : [
-                    {
-                      title: 'Case Study: Global Transport Inc.',
-                      excerpt: 'How we streamlined their fleet payments.',
-                    },
-                    {
-                      title: 'Whitepaper: Digital Transformation',
-                      excerpt: 'Key strategies for enterprise success.',
-                    },
-                  ]).map((item, index) => (
+                  {(Array.isArray(resourceItems) && resourceItems.length > 0 ? resourceItems.slice(0, 8) : fallbackResources).map((item, index) => (
                     <ResourceCard
                       key={index}
-                      title={item.title}
+                      title={item.title || 'Resource'}
                       description={item.excerpt || ''}
-                      // Alternate type for simple visual variety; content is text‑only
                       type={index % 2 === 0 ? 'case-study' : 'whitepaper'}
                     />
                   ))}
@@ -1408,6 +1500,25 @@ export default function App() {
                 /> 
               ))} 
             </div> 
+          </div>
+
+          {/* Case Studies - vertically scrollable */}
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[320px] min-h-0">
+            <p className="mb-2 shrink-0" style={{ fontWeight: 700, color: '#3D1628', fontSize: '18px' }}>Case Studies</p>
+            <p className="text-xs text-gray-500 mb-3 shrink-0">From <a href="https://www.corpay.com/resources/customer-stories" target="_blank" rel="noopener noreferrer" className="text-[#981239] hover:underline">corpay.com/resources/customer-stories</a></p>
+            <div className="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0 pr-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {caseStudyItems.length > 0 ? caseStudyItems.map((item, index) => (
+                <CaseStudyCard
+                  key={index}
+                  title={item.title || 'Case Study'}
+                  excerpt={item.excerpt}
+                  category={item.category}
+                  image={item.image}
+                />
+              )) : (
+                <p className="text-sm text-gray-500">Loading case studies from Corpay…</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

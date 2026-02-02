@@ -14,6 +14,17 @@ class EmployeeMilestoneCreate(BaseModel):
     milestone_date: datetime
 
 
+class EmployeeMilestoneUpdate(BaseModel):
+    name: str
+    description: str
+    avatar_path: Optional[str] = None
+    border_color: str
+    background_color: str
+    milestone_type: str
+    department: Optional[str] = None
+    milestone_date: datetime
+
+
 class EmployeeMilestoneResponse(BaseModel):
     id: int
     name: str

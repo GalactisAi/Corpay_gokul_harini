@@ -5,7 +5,6 @@ import {
   BarChart3, 
   FileText, 
   Users, 
-  CreditCard, 
   Settings, 
   PieChart,
   MonitorPlay,
@@ -22,7 +21,6 @@ const navItems = [
   { path: '/admin/revenue', label: 'Revenue', icon: BarChart3 },
   { path: '/admin/posts', label: 'Posts', icon: FileText },
   { path: '/admin/employees', label: 'Employees', icon: Users },
-  { path: '/admin/payments', label: 'Payments', icon: CreditCard },
   { path: '/admin/config', label: 'API Config', icon: Settings },
   { path: '/admin/switch-screen', label: 'Switch Screen', icon: MonitorPlay },
 ];

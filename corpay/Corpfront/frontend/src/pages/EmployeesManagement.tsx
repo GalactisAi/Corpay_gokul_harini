@@ -145,10 +145,10 @@ export default function EmployeesManagement() {
                   onChange={(e) => setFormData({ ...formData, milestone_type: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                 >
-                  <option value="anniversary">Work Anniversary</option>
-                  <option value="birthday">Birthday</option>
-                  <option value="promotion">Promotion</option>
-                  <option value="new_hire">New Hire</option>
+                  <option value="anniversary">📅 Work Anniversary</option>
+                  <option value="birthday">🎂 Birthday</option>
+                  <option value="promotion">📈 Promotion</option>
+                  <option value="new_hire">✨ New Hire</option>
                 </select>
               </div>
               <div>

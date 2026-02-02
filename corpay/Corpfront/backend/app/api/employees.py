@@ -4,7 +4,7 @@ from typing import List
 from app.database import get_db
 from app.models.employees import EmployeeMilestone
 from app.models.file_upload import FileUpload, FileType
-from app.schemas.employees import EmployeeMilestoneCreate, EmployeeMilestoneResponse
+from app.schemas.employees import EmployeeMilestoneCreate, EmployeeMilestoneUpdate, EmployeeMilestoneResponse
 from app.utils.auth import get_current_admin_user
 from app.utils.file_handler import save_uploaded_file, get_file_size_mb
 from app.services.excel_parser import ExcelParser
@@ -35,6 +35,43 @@ async def create_employee_milestone(
     """Create a new employee milestone"""
     db_milestone = EmployeeMilestone(**milestone.dict())
     db.add(db_milestone)
+    db.commit()
+    db.refresh(db_milestone)
+    return db_milestone
+
+
+@router.put("/dev/{milestone_id}", response_model=EmployeeMilestoneResponse)
+@router.patch("/dev/{milestone_id}", response_model=EmployeeMilestoneResponse)
+async def update_employee_milestone_dev(
+    milestone_id: int,
+    milestone: EmployeeMilestoneUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update an employee milestone (development mode - no auth required)"""
+    db_milestone = db.query(EmployeeMilestone).filter(EmployeeMilestone.id == milestone_id).first()
+    if not db_milestone:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    for key, value in milestone.dict().items():
+        setattr(db_milestone, key, value)
+    db.commit()
+    db.refresh(db_milestone)
+    return db_milestone
+
+
+@router.put("/{milestone_id}", response_model=EmployeeMilestoneResponse)
+@router.patch("/{milestone_id}", response_model=EmployeeMilestoneResponse)
+async def update_employee_milestone(
+    milestone_id: int,
+    milestone: EmployeeMilestoneUpdate,
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Update an employee milestone"""
+    db_milestone = db.query(EmployeeMilestone).filter(EmployeeMilestone.id == milestone_id).first()
+    if not db_milestone:
+        raise HTTPException(status_code=404, detail="Milestone not found")
+    for key, value in milestone.dict().items():
+        setattr(db_milestone, key, value)
     db.commit()
     db.refresh(db_milestone)
     return db_milestone

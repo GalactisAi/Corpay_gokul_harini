@@ -20,6 +20,7 @@ from app.services.linkedin_api import LinkedInService
 from app.services.newsroom_scraper import (
     fetch_corpay_newsroom,
     fetch_corpay_resources_newsroom,
+    fetch_corpay_customer_stories,
 )
 from app.utils.cache import get, set
 
@@ -75,26 +76,43 @@ async def get_share_price(db: Session = Depends(get_db)):
 
 @router.get("/card-titles")
 async def get_card_titles(db: Session = Depends(get_db)):
-    """Get configurable dashboard card titles for payments and system performance."""
+    """Get configurable dashboard card titles and subtitles for payments and system performance."""
     default_payments = "Payments Processed Today"
     default_system = "System Performance"
+    default_payments_amount_subtitle = "Amount Processed"
+    default_payments_transactions_subtitle = "Transactions"
 
+    config_keys = [
+        "dashboard_payments_title",
+        "dashboard_system_title",
+        "dashboard_payments_amount_subtitle",
+        "dashboard_payments_transactions_subtitle",
+    ]
     configs = (
         db.query(ApiConfig)
-        .filter(ApiConfig.config_key.in_(["dashboard_payments_title", "dashboard_system_title"]))
+        .filter(ApiConfig.config_key.in_(config_keys))
         .all()
     )
 
     titles = {
         "payments_title": default_payments,
         "system_performance_title": default_system,
+        "payments_amount_subtitle": default_payments_amount_subtitle,
+        "payments_transactions_subtitle": default_payments_transactions_subtitle,
     }
 
     for cfg in configs:
-        if cfg.config_key == "dashboard_payments_title" and cfg.config_value:
+        # Allow empty string so user can clear custom text (we still overwrite default)
+        if cfg.config_value is None:
+            continue
+        if cfg.config_key == "dashboard_payments_title":
             titles["payments_title"] = cfg.config_value
-        elif cfg.config_key == "dashboard_system_title" and cfg.config_value:
+        elif cfg.config_key == "dashboard_system_title":
             titles["system_performance_title"] = cfg.config_value
+        elif cfg.config_key == "dashboard_payments_amount_subtitle":
+            titles["payments_amount_subtitle"] = cfg.config_value
+        elif cfg.config_key == "dashboard_payments_transactions_subtitle":
+            titles["payments_transactions_subtitle"] = cfg.config_value
 
     return titles
 
@@ -304,7 +322,7 @@ async def get_newsroom_items(limit: int = 5) -> List[NewsroomItemResponse]:
 async def get_resources_newsroom_items(limit: int = 4) -> List[NewsroomItemResponse]:
     """
     Get latest items from the Corpay Resources → Newsroom page.
-    
+
     Source: `https://www.corpay.com/resources/newsroom?page=2`
     Returns up to `limit` items, text-only (no images).
     Cached for 5 minutes to avoid slow external fetches on every request.
@@ -315,6 +333,39 @@ async def get_resources_newsroom_items(limit: int = 4) -> List[NewsroomItemRespo
         return cached
     items = await fetch_corpay_resources_newsroom(limit=limit)
     result = [NewsroomItemResponse(**item) for item in items]
+    set(cache_key, result, ttl_seconds=300)
+    return result
+
+
+# Fallback when scraper returns empty (e.g. JS-rendered page). From corpay.com/resources/customer-stories.
+CUSTOMER_STORIES_FALLBACK = [
+    {"title": "Omni Hotels & Resorts", "url": "https://www.corpay.com/resources/customer-stories/omni-hotels-and-resorts", "category": "Commercial Cards", "excerpt": "A luxury hotel brand earns $1.3M in rebates and cuts check payments by over 50% through their partnership with Corpay."},
+    {"title": "Thirty Madison", "url": "https://www.corpay.com/resources/customer-stories/thirty-madison", "category": "Payments Automation", "excerpt": "The virtual-first healthcare company behind Nurx, Keeps, and Cove—centralized AP with Corpay to manage ~10 entities and multiple bank accounts in one place."},
+    {"title": "Ewing Automotive", "url": "https://www.corpay.com/resources/customer-stories/ewing-automotive", "category": "Commercial Cards", "excerpt": "See how Ewing Automotive modernized AP, reduced fraud risk, and earned monthly rebates with Corpay's full-service automation platform."},
+    {"title": "Scaling Internet Company", "url": "https://www.corpay.com/resources/customer-stories", "category": "Corpay Complete", "excerpt": "Scaling internet company pockets savings of $3.5M per month with Corpay Complete's end-to-end functionality."},
+    {"title": "Aluminium Duffel", "url": "https://www.corpay.com/resources/customer-stories", "category": "Cross-Border", "excerpt": "Treasury department approached banks and brokers to provide credit lines and technical support in the use of FX derivatives."},
+]
+
+
+@router.get("/customer-stories", response_model=List[NewsroomItemResponse])
+async def get_customer_stories(limit: int = 12) -> List[NewsroomItemResponse]:
+    """
+    Get case studies from Corpay Customer Stories.
+
+    Source: https://www.corpay.com/resources/customer-stories
+    Fetches multiple pages so every new case study posted there is included.
+    When the live scrape returns empty, returns a fallback list so the UI always has content.
+    Cached for 5 minutes; new case studies will appear after cache expiry or refresh.
+    """
+    cache_key = f"customer_stories_{limit}"
+    cached = get(cache_key)
+    if cached is not None:
+        return cached
+    items = await fetch_corpay_customer_stories(limit=limit)
+    if not items:
+        items = CUSTOMER_STORIES_FALLBACK[:limit]
+    # Scraper returns title, url, excerpt, category (no date)
+    result = [NewsroomItemResponse(title=item["title"], url=item["url"], date=None, category=item.get("category"), excerpt=item.get("excerpt")) for item in items]
     set(cache_key, result, ttl_seconds=300)
     return result
 

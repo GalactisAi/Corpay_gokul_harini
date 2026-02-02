@@ -54,7 +54,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Login failed';
+      const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error';
+      const errorMessage = isNetworkError
+        ? 'Cannot reach server. Ensure the backend is running at http://localhost:8000 and CORS allows this origin.'
+        : (error.response?.data?.detail || error.message || 'Login failed');
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

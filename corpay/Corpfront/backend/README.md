@@ -2,12 +2,34 @@
 
 FastAPI backend for the Corpay Dashboard system.
 
-## Setup
+## Start the backend (recommended)
+
+From this directory (`Corpfront/backend`), use the run script. It creates a venv if missing, installs dependencies, and starts the server:
+
+**macOS / Linux:**
+```bash
+./run.sh
+```
+
+**Windows:**
+```bat
+start_backend.bat
+```
+
+The server runs at **http://0.0.0.0:8000**. Admin user is created automatically on startup (see `app/main.py` lifespan).
+
+One-off admin/setup scripts are in `scripts/`; see `scripts/README.md`.
+
+---
+
+## Setup (manual)
 
 ### Quick Start with Supabase (Recommended)
 
-1. Install dependencies:
+1. Create and use the venv:
 ```bash
+python3 -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 

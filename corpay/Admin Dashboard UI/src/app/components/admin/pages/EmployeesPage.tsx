@@ -19,6 +19,14 @@ interface Employee {
   date: string;
 }
 
+const MILESTONE_EMOJI: Record<string, string> = {
+  'Work Anniversary': '📅',
+  'Promotion': '📈',
+  'Birthday': '🎂',
+  'Achievement': '🏆',
+  'New Hire': '✨',
+};
+
 export function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
 
@@ -148,10 +156,75 @@ export function EmployeesPage() {
     try {
       let response;
       if (editingEmployee) {
-        // For now, delete and recreate (PUT endpoint not implemented)
-        toast.info('Update not yet implemented. Please delete and recreate.');
-        handleDialogClose();
-        return;
+        // Update existing milestone
+        const milestoneId = editingEmployee.id;
+        const updatePayload = { headers: { 'Content-Type': 'application/json' }, timeout: 10000 };
+        const updatePayloadAuth = { headers, timeout: 10000 };
+        try {
+          try {
+            response = await axios.put(
+              `${API_BASE_URL}/api/admin/employees/dev/${milestoneId}`,
+              milestoneData,
+              updatePayload
+            );
+          } catch (putError: any) {
+            if (putError.response?.status === 405) {
+              response = await axios.patch(
+                `${API_BASE_URL}/api/admin/employees/dev/${milestoneId}`,
+                milestoneData,
+                updatePayload
+              );
+            } else {
+              throw putError;
+            }
+          }
+        } catch (devError: any) {
+          try {
+            response = await axios.put(
+              `${API_BASE_URL}/api/admin/employees/${milestoneId}`,
+              milestoneData,
+              updatePayloadAuth
+            );
+          } catch (putError: any) {
+            if (putError.response?.status === 405) {
+              response = await axios.patch(
+                `${API_BASE_URL}/api/admin/employees/${milestoneId}`,
+                milestoneData,
+                updatePayloadAuth
+              );
+            } else {
+              throw putError;
+            }
+          }
+        }
+        // If user selected a new photo, upload and link to this milestone
+        if (photoFile && avatarPath) {
+          const formDataUpload = new FormData();
+          formDataUpload.append('file', photoFile);
+          formDataUpload.append('employee_id', milestoneId);
+          try {
+            await axios.post(
+              `${API_BASE_URL}/api/admin/employees/upload-photo-dev`,
+              formDataUpload,
+              { timeout: 30000 }
+            );
+          } catch (uploadError: any) {
+            console.error('Photo upload on update failed:', uploadError);
+          }
+        } else if (photoFile && response?.data?.id) {
+          const formDataUpload = new FormData();
+          formDataUpload.append('file', photoFile);
+          formDataUpload.append('employee_id', response.data.id.toString());
+          try {
+            await axios.post(
+              `${API_BASE_URL}/api/admin/employees/upload-photo-dev`,
+              formDataUpload,
+              { timeout: 30000 }
+            );
+          } catch (uploadError: any) {
+            console.error('Photo upload on update failed:', uploadError);
+          }
+        }
       } else {
         // Create new milestone
         try {
@@ -213,7 +286,7 @@ export function EmployeesPage() {
         }
       }
 
-      toast.success('Employee milestone saved successfully to backend');
+      toast.success(editingEmployee ? 'Employee milestone updated successfully' : 'Employee milestone saved successfully to backend');
       handleDialogClose();
       fetchEmployees(); // Reload from backend
     } catch (error: any) {
@@ -313,10 +386,10 @@ export function EmployeesPage() {
                   className="w-full px-3 py-2 rounded-md bg-white/10 border border-white/20 text-white"
                 >
                   <option value="">Select milestone...</option>
-                  <option value="Work Anniversary">Work Anniversary</option>
-                  <option value="Promotion">Promotion</option>
-                  <option value="Birthday">Birthday</option>
-                  <option value="Achievement">Achievement</option>
+                  <option value="Work Anniversary">📅 Work Anniversary</option>
+                  <option value="Promotion">📈 Promotion</option>
+                  <option value="Birthday">🎂 Birthday</option>
+                  <option value="Achievement">🏆 Achievement</option>
                 </select>
               </div>
 
@@ -387,7 +460,7 @@ export function EmployeesPage() {
                   <TableCell className="text-white">{employee.name}</TableCell>
                   <TableCell>
                     <span className="px-2 py-1 rounded text-xs bg-purple-500/20 text-purple-300">
-                      {employee.milestone}
+                      {MILESTONE_EMOJI[employee.milestone] ? `${MILESTONE_EMOJI[employee.milestone]} ` : ''}{employee.milestone}
                     </span>
                   </TableCell>
                   <TableCell className="text-gray-400">{employee.description}</TableCell>
