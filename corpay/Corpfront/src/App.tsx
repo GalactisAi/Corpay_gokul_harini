@@ -7,7 +7,6 @@ import { EmployeeMilestone } from './components/EmployeeMilestone';
 import { CompanyAnnouncement } from './components/CompanyAnnouncement';
 import { NewsroomCard } from './components/NewsroomCard';
 import { ResourceCard } from './components/ResourceCard';
-import { CaseStudyCard } from './components/CaseStudyCard';
 import { FullScreenSlideshow } from './components/FullScreenSlideshow';
 import { dashboardApi } from './services/api';
 import corpayLogo from './assets/895e861462df910e5a72623a9b8e8a744f2ab348.png';
@@ -99,31 +98,41 @@ const linkedInPosts = [
     author: 'Corpay',
     timeAgo: '2 hours ago',
     content: "We're excited to be named a leader in corporate payments for the 5th year in a row! Our team's dedication makes it all possible. #Fintech #Payments",
-    image: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGdyb3d0aCUyMGNoYXJ0fGVufDF8fHx8MTc2MzM3MTQ4MHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
+    image: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGdyb3d0aCUyMGNoYXJ0fGVufDF8fHx8MTc2MzM3MTQ4MHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+    likes: 0,
+    comments: 0
   },
   {
     author: 'Corpay',
     timeAgo: '1 day ago',
     content: 'Join our upcoming webinar on the future of corporate payment solutions. Register now to secure your spot! Link in bio.',
-    image: undefined
+    image: undefined,
+    likes: 0,
+    comments: 0
   },
   {
     author: 'Corpay',
     timeAgo: '3 days ago',
     content: 'Our latest case study with HealthFirst shows how they reduced processing costs by 30%. A huge win for efficiency! #Healthcare #Finance',
-    image: 'https://images.unsplash.com/photo-1755189118414-14c8dacdb082?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBkb2N0b3IlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
+    image: 'https://images.unsplash.com/photo-1755189118414-14c8dacdb082?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBkb2N0b3IlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+    likes: 0,
+    comments: 0
   },
   {
     author: 'Corpay',
     timeAgo: '5 days ago',
     content: 'Celebrating our partnership with industry leaders! Together, we\'re shaping the future of digital payments.',
-    image: undefined
+    image: undefined,
+    likes: 0,
+    comments: 0
   },
   {
     author: 'Corpay',
     timeAgo: '1 week ago',
     content: 'Innovation in payment processing: Discover how we\'re revolutionizing fleet management and corporate card solutions.',
-    image: 'https://images.unsplash.com/photo-1707075891545-41b982930351?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW50ZWNoJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
+    image: 'https://images.unsplash.com/photo-1707075891545-41b982930351?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW50ZWNoJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
+    likes: 0,
+    comments: 0
   },
 ];
 
@@ -178,24 +187,16 @@ const crossBorderPosts = [
   },
 ];
 
-// Fallback when customer-stories API fails or returns empty (e.g. backend not running)
-const fallbackCaseStudies = [
-  { title: 'Omni Hotels & Resorts', url: 'https://www.corpay.com/resources/customer-stories/omni-hotels-and-resorts', category: 'Commercial Cards', excerpt: 'A luxury hotel brand earns $1.3M in rebates and cuts check payments by over 50%.' },
-  { title: 'Thirty Madison', url: 'https://www.corpay.com/resources/customer-stories/thirty-madison', category: 'Payments Automation', excerpt: 'Centralized AP with Corpay to manage ~10 entities and multiple bank accounts in one place.' },
-  { title: 'Ewing Automotive', url: 'https://www.corpay.com/resources/customer-stories/ewing-automotive', category: 'Commercial Cards', excerpt: 'Modernized AP, reduced fraud risk, and earned monthly rebates with Corpay.' },
-  { title: 'Scaling Internet Company', url: 'https://www.corpay.com/resources/customer-stories', category: 'Corpay Complete', excerpt: 'Savings of $3.5M per month with Corpay Complete\'s end-to-end functionality.' },
-];
-
 // Fallback when resources/newsroom API fails or returns empty (8 items to match display count)
 const fallbackResources = [
-  { title: 'Case Study: Global Transport Inc.', excerpt: 'How we streamlined their fleet payments.' },
-  { title: 'Whitepaper: Digital Transformation', excerpt: 'Key strategies for enterprise success.' },
-  { title: 'Corpay Resources & Newsroom', excerpt: 'Latest articles and insights from Corpay.' },
-  { title: 'Guide: Commercial Card Best Practices', excerpt: 'Optimize spend and control with commercial cards.' },
-  { title: 'Case Study: Hospitality Payments', excerpt: 'Simplifying cross-border payments for hotels.' },
-  { title: 'Whitepaper: FX Risk Management', excerpt: 'Hedging strategies for treasury teams.' },
-  { title: 'Webinar: Digital Wallets & B2B', excerpt: 'Adoption trends and integration options.' },
-  { title: 'Blog: Treasury Automation', excerpt: 'From manual to automated reconciliation.' },
+  { title: 'Case Study: Global Transport Inc.', excerpt: 'How we streamlined their fleet payments.', url: '' },
+  { title: 'Whitepaper: Digital Transformation', excerpt: 'Key strategies for enterprise success.', url: '' },
+  { title: 'Corpay Resources & Newsroom', excerpt: 'Latest articles and insights from Corpay.', url: '' },
+  { title: 'Guide: Commercial Card Best Practices', excerpt: 'Optimize spend and control with commercial cards.', url: '' },
+  { title: 'Case Study: Hospitality Payments', excerpt: 'Simplifying cross-border payments for hotels.', url: '' },
+  { title: 'Whitepaper: FX Risk Management', excerpt: 'Hedging strategies for treasury teams.', url: '' },
+  { title: 'Webinar: Digital Wallets & B2B', excerpt: 'Adoption trends and integration options.', url: '' },
+  { title: 'Blog: Treasury Automation', excerpt: 'From manual to automated reconciliation.', url: '' },
 ];
 
 const employeeMilestones = [
@@ -300,13 +301,6 @@ export default function App() {
     excerpt?: string;
   }>>([]);
   const [resourceItems, setResourceItems] = useState<Array<{
-    title: string;
-    url: string;
-    date?: string;
-    category?: string;
-    excerpt?: string;
-  }>>([]);
-  const [caseStudyItems, setCaseStudyItems] = useState<Array<{
     title: string;
     url: string;
     date?: string;
@@ -427,7 +421,6 @@ export default function App() {
           systemRes,
           newsroomRes,
           resourcesRes,
-          caseStudiesRes,
         ] = await Promise.allSettled([
           dashboardApi.getRevenue(),
           dashboardApi.getSharePrice(),
@@ -440,7 +433,6 @@ export default function App() {
           dashboardApi.getSystemPerformance(),
           dashboardApi.getNewsroom(12),
           dashboardApi.getResourcesNewsroom(8),
-          dashboardApi.getCustomerStories(12),
         ]);
 
         if (revenueRes.status === 'fulfilled') {
@@ -630,12 +622,6 @@ export default function App() {
           setResourceItems(list.length > 0 ? list : fallbackResources);
         } else {
           setResourceItems(fallbackResources);
-        }
-        if (caseStudiesRes.status === 'fulfilled') {
-          const data = caseStudiesRes.value.data || [];
-          setCaseStudyItems(data.length > 0 ? data : fallbackCaseStudies);
-        } else {
-          setCaseStudyItems(fallbackCaseStudies);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -1460,7 +1446,7 @@ export default function App() {
         <div className="lg:col-span-1 flex flex-col gap-6">
 
           {/* Corpay Cross-Border Posts */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[400px]">
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col" style={{ height: '600px' }}>
             <p className="mb-4" style={{ fontWeight: 700, color: '#981239', fontSize: '18px' }}>Corpay Cross-Border Posts</p>
             <div ref={scrollContainerRef2} className="overflow-y-auto scrollbar-hide flex-1" style={{ 
               scrollbarWidth: 'none', 
@@ -1482,7 +1468,7 @@ export default function App() {
           </div>
 
           {/* Corpay Posts */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[480px]"> 
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col" style={{ height: '512px' }}> 
             <p className="mb-4" style={{ fontWeight: 700, color: '#981239', fontSize: '18px' }}>Corpay Posts</p> 
             <div ref={scrollContainerRef} className="overflow-y-auto scrollbar-hide flex-1" style={{ 
               scrollbarWidth: 'none', 
@@ -1500,25 +1486,6 @@ export default function App() {
                 /> 
               ))} 
             </div> 
-          </div>
-
-          {/* Case Studies - vertically scrollable */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[320px] min-h-0">
-            <p className="mb-2 shrink-0" style={{ fontWeight: 700, color: '#3D1628', fontSize: '18px' }}>Case Studies</p>
-            <p className="text-xs text-gray-500 mb-3 shrink-0">From <a href="https://www.corpay.com/resources/customer-stories" target="_blank" rel="noopener noreferrer" className="text-[#981239] hover:underline">corpay.com/resources/customer-stories</a></p>
-            <div className="flex flex-col gap-3 overflow-y-auto flex-1 min-h-0 pr-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {caseStudyItems.length > 0 ? caseStudyItems.map((item, index) => (
-                <CaseStudyCard
-                  key={index}
-                  title={item.title || 'Case Study'}
-                  excerpt={item.excerpt}
-                  category={item.category}
-                  image={item.image}
-                />
-              )) : (
-                <p className="text-sm text-gray-500">Loading case studies from Corpay…</p>
-              )}
-            </div>
           </div>
         </div>
       </div>

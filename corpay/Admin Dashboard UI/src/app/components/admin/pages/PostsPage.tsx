@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { postsService } from '@/app/services/apiService';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, ImageIcon, RefreshCw, FileText, Globe, Linkedin } from 'lucide-react';
+import { Plus, Edit, Trash2, ImageIcon, RefreshCw, FileText, Globe, Linkedin, X } from 'lucide-react';
 import axios from 'axios';
 
 interface Post {
@@ -26,8 +26,8 @@ export function PostsPage() {
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [useApiPosts, setUseApiPosts] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
-  const [linkedInPostUrl, setLinkedInPostUrl] = useState('');
-  const [crossBorderPostUrl, setCrossBorderPostUrl] = useState('');
+  const [linkedInPostUrls, setLinkedInPostUrls] = useState<string[]>(['']);
+  const [crossBorderPostUrls, setCrossBorderPostUrls] = useState<string[]>(['']);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -482,24 +482,55 @@ export function PostsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="linkedin-url" className="text-white">LinkedIn Post URL</Label>
-                <Input
-                  id="linkedin-url"
-                  type="url"
-                  value={linkedInPostUrl}
-                  onChange={(e) => setLinkedInPostUrl(e.target.value)}
-                  placeholder="https://www.linkedin.com/posts/..."
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-500"
-                />
+              <div className="space-y-3">
+                <Label className="text-white">LinkedIn Post URL(s)</Label>
+                {linkedInPostUrls.map((url, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <Input
+                      type="url"
+                      value={url}
+                      onChange={(e) => {
+                        const newUrls = [...linkedInPostUrls];
+                        newUrls[index] = e.target.value;
+                        setLinkedInPostUrls(newUrls);
+                      }}
+                      placeholder="https://www.linkedin.com/posts/..."
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 flex-1"
+                    />
+                    {linkedInPostUrls.length > 1 && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          const newUrls = linkedInPostUrls.filter((_, i) => i !== index);
+                          setLinkedInPostUrls(newUrls);
+                        }}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setLinkedInPostUrls([...linkedInPostUrls, ''])}
+                  className="w-full border-pink-500/50 text-pink-400 hover:bg-pink-500/20 hover:border-pink-500 hover:text-pink-300 bg-pink-500/10"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Another URL
+                </Button>
                 <p className="text-xs text-gray-400 mt-1">
-                  Enter the full URL of the LinkedIn post you want to add
+                  Enter the full URL(s) of the LinkedIn post(s) you want to add
                 </p>
               </div>
               <Button 
                 onClick={async () => {
-                  if (!linkedInPostUrl || !linkedInPostUrl.trim()) {
-                    toast.error('Please enter a LinkedIn post URL');
+                  const validUrls = linkedInPostUrls.filter(url => url.trim());
+                  if (validUrls.length === 0) {
+                    toast.error('Please enter at least one LinkedIn post URL');
                     return;
                   }
 
@@ -514,46 +545,51 @@ export function PostsPage() {
                       headers['Authorization'] = `Bearer ${token}`;
                     }
 
-                    // Try dev endpoint first (no auth), then auth endpoint
-                    let response;
-                    try {
-                      response = await axios.post(
-                        `${API_BASE_URL}/api/admin/posts/from-url-dev`,
-                        {
-                          post_url: linkedInPostUrl.trim(),
-                          post_type: 'corpay'
-                        },
-                        {
-                          headers: { 'Content-Type': 'application/json' },
-                          timeout: 10000
+                    // Process all URLs
+                    const promises = validUrls.map(async (url) => {
+                      try {
+                        // Try dev endpoint first (no auth), then auth endpoint
+                        try {
+                          return await axios.post(
+                            `${API_BASE_URL}/api/admin/posts/from-url-dev`,
+                            {
+                              post_url: url.trim(),
+                              post_type: 'corpay'
+                            },
+                            {
+                              headers: { 'Content-Type': 'application/json' },
+                              timeout: 10000
+                            }
+                          );
+                        } catch (devError: any) {
+                          // Try with auth
+                          return await axios.post(
+                            `${API_BASE_URL}/api/admin/posts/from-url`,
+                            {
+                              post_url: url.trim(),
+                              post_type: 'corpay'
+                            },
+                            {
+                              headers,
+                              timeout: 10000
+                            }
+                          );
                         }
-                      );
-                    } catch (devError: any) {
-                      // Try with auth
-                      response = await axios.post(
-                        `${API_BASE_URL}/api/admin/posts/from-url`,
-                        {
-                          post_url: linkedInPostUrl.trim(),
-                          post_type: 'corpay'
-                        },
-                        {
-                          headers,
-                          timeout: 10000
-                        }
-                      );
-                    }
+                      } catch (error: any) {
+                        console.error(`Error posting URL ${url}:`, error);
+                        throw error;
+                      }
+                    });
 
-                    toast.success('Post added successfully! It will appear in the dashboard.');
-                    setLinkedInPostUrl('');
+                    await Promise.all(promises);
+                    toast.success(`${validUrls.length} post(s) added successfully! They will appear in the dashboard.`);
+                    setLinkedInPostUrls(['']);
                     
-                    // Reload posts to show the new one
+                    // Reload posts to show the new ones
                     loadPostsFromAPI();
-                    
-                    // Note: The frontend dashboard will need to be refreshed to see the new post
-                    // The dashboard fetches posts on page load, so a manual refresh is needed
                   } catch (error: any) {
-                    console.error('Error posting URL:', error);
-                    let errorMsg = 'Failed to add post';
+                    console.error('Error posting URLs:', error);
+                    let errorMsg = 'Failed to add post(s)';
                     if (error.response?.data?.detail) {
                       errorMsg = typeof error.response.data.detail === 'string' 
                         ? error.response.data.detail 
@@ -664,24 +700,55 @@ export function PostsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="crossborder-url" className="text-white">Cross-Border Post URL</Label>
-                <Input
-                  id="crossborder-url"
-                  type="url"
-                  value={crossBorderPostUrl}
-                  onChange={(e) => setCrossBorderPostUrl(e.target.value)}
-                  placeholder="https://www.linkedin.com/posts/..."
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-500"
-                />
+              <div className="space-y-3">
+                <Label className="text-white">Cross-Border Post URL(s)</Label>
+                {crossBorderPostUrls.map((url, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <Input
+                      type="url"
+                      value={url}
+                      onChange={(e) => {
+                        const newUrls = [...crossBorderPostUrls];
+                        newUrls[index] = e.target.value;
+                        setCrossBorderPostUrls(newUrls);
+                      }}
+                      placeholder="https://www.linkedin.com/posts/..."
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 flex-1"
+                    />
+                    {crossBorderPostUrls.length > 1 && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          const newUrls = crossBorderPostUrls.filter((_, i) => i !== index);
+                          setCrossBorderPostUrls(newUrls);
+                        }}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCrossBorderPostUrls([...crossBorderPostUrls, ''])}
+                  className="w-full border-pink-500/50 text-pink-400 hover:bg-pink-500/20 hover:border-pink-500 hover:text-pink-300 bg-pink-500/10"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Another URL
+                </Button>
                 <p className="text-xs text-gray-400 mt-1">
-                  Enter the full URL of the Cross-Border post you want to add
+                  Enter the full URL(s) of the Cross-Border post(s) you want to add
                 </p>
               </div>
               <Button 
                 onClick={async () => {
-                  if (!crossBorderPostUrl || !crossBorderPostUrl.trim()) {
-                    toast.error('Please enter a Cross-Border post URL');
+                  const validUrls = crossBorderPostUrls.filter(url => url.trim());
+                  if (validUrls.length === 0) {
+                    toast.error('Please enter at least one Cross-Border post URL');
                     return;
                   }
 
@@ -696,45 +763,53 @@ export function PostsPage() {
                       headers['Authorization'] = `Bearer ${token}`;
                     }
 
-                    // Try dev endpoint first (no auth), then auth endpoint
-                    let response;
-                    try {
-                      response = await axios.post(
-                        `${API_BASE_URL}/api/admin/posts/from-url-dev`,
-                        {
-                          post_url: crossBorderPostUrl.trim(),
-                          post_type: 'cross_border'
-                        },
-                        {
-                          headers: { 'Content-Type': 'application/json' },
-                          timeout: 10000
+                    // Process all URLs
+                    const promises = validUrls.map(async (url) => {
+                      try {
+                        // Try dev endpoint first (no auth), then auth endpoint
+                        try {
+                          return await axios.post(
+                            `${API_BASE_URL}/api/admin/posts/from-url-dev`,
+                            {
+                              post_url: url.trim(),
+                              post_type: 'cross_border'
+                            },
+                            {
+                              headers: { 'Content-Type': 'application/json' },
+                              timeout: 10000
+                            }
+                          );
+                        } catch (devError: any) {
+                          // Try with auth
+                          return await axios.post(
+                            `${API_BASE_URL}/api/admin/posts/from-url`,
+                            {
+                              post_url: url.trim(),
+                              post_type: 'cross_border'
+                            },
+                            {
+                              headers,
+                              timeout: 10000
+                            }
+                          );
                         }
-                      );
-                    } catch (devError: any) {
-                      // Try with auth
-                      response = await axios.post(
-                        `${API_BASE_URL}/api/admin/posts/from-url`,
-                        {
-                          post_url: crossBorderPostUrl.trim(),
-                          post_type: 'cross_border'
-                        },
-                        {
-                          headers,
-                          timeout: 10000
-                        }
-                      );
-                    }
+                      } catch (error: any) {
+                        console.error(`Error posting URL ${url}:`, error);
+                        throw error;
+                      }
+                    });
 
-                    toast.success('Post added successfully! It will appear in the dashboard.');
-                    setCrossBorderPostUrl('');
+                    await Promise.all(promises);
+                    toast.success(`${validUrls.length} post(s) added successfully! They will appear in the dashboard.`);
+                    setCrossBorderPostUrls(['']);
                     
-                    // Reload posts to show the new one
+                    // Reload posts to show the new ones
                     if (useApiPosts) {
                       loadPostsFromAPI();
                     }
                   } catch (error: any) {
-                    console.error('Error posting URL:', error);
-                    let errorMsg = 'Failed to add post';
+                    console.error('Error posting URLs:', error);
+                    let errorMsg = 'Failed to add post(s)';
                     if (error.response?.data?.detail) {
                       errorMsg = typeof error.response.data.detail === 'string' 
                         ? error.response.data.detail 
