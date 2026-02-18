@@ -189,39 +189,90 @@ const crossBorderPosts = [
 
 // Fallback when resources/newsroom API fails or returns empty (8 items to match display count)
 const fallbackResources = [
-  { title: 'Case Study: Global Transport Inc.', excerpt: 'How we streamlined their fleet payments.', url: 'https://www.corpay.com/resources/customer-stories' },
-  { title: 'Whitepaper: Digital Transformation', excerpt: 'Key strategies for enterprise success.', url: 'https://www.corpay.com/resources' },
-  { title: 'Corpay Resources & Newsroom', excerpt: 'Latest articles and insights from Corpay.', url: 'https://www.corpay.com/resources/newsroom' },
-  { title: 'Guide: Commercial Card Best Practices', excerpt: 'Optimize spend and control with commercial cards.', url: 'https://www.corpay.com/resources' },
-  { title: 'Case Study: Hospitality Payments', excerpt: 'Simplifying cross-border payments for hotels.', url: 'https://www.corpay.com/resources/customer-stories' },
-  { title: 'Whitepaper: FX Risk Management', excerpt: 'Hedging strategies for treasury teams.', url: 'https://www.corpay.com/resources' },
-  { title: 'Webinar: Digital Wallets & B2B', excerpt: 'Adoption trends and integration options.', url: 'https://www.corpay.com/resources/newsroom' },
-  { title: 'Blog: Treasury Automation', excerpt: 'From manual to automated reconciliation.', url: 'https://www.corpay.com/resources' },
+  { title: 'Case Study: Global Transport Inc.', excerpt: 'How we streamlined their fleet payments.', url: '' },
+  { title: 'Whitepaper: Digital Transformation', excerpt: 'Key strategies for enterprise success.', url: '' },
+  { title: 'Corpay Resources & Newsroom', excerpt: 'Latest articles and insights from Corpay.', url: '' },
+  { title: 'Guide: Commercial Card Best Practices', excerpt: 'Optimize spend and control with commercial cards.', url: '' },
+  { title: 'Case Study: Hospitality Payments', excerpt: 'Simplifying cross-border payments for hotels.', url: '' },
+  { title: 'Whitepaper: FX Risk Management', excerpt: 'Hedging strategies for treasury teams.', url: '' },
+  { title: 'Webinar: Digital Wallets & B2B', excerpt: 'Adoption trends and integration options.', url: '' },
+  { title: 'Blog: Treasury Automation', excerpt: 'From manual to automated reconciliation.', url: '' },
 ];
 
 const employeeMilestones = [
-  { name: "Sarah Chen's Work Anniversary", description: "5 Years in Marketing", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop", borderColor: "#BE1549", backgroundColor: "#fff5f9", emoji: '📅' },
-  { name: "Michael Brown's Birthday", description: "Happy Birthday!", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop", borderColor: "#0085C2", backgroundColor: "#f0f9fd", emoji: '🎂' },
-  { name: "Emily White joins Engineering", description: "Welcome to the team!", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop", borderColor: "#981239", backgroundColor: "#fef5f8", emoji: '✨' },
-  { name: "David Martinez's Work Anniversary", description: "10 Years in Finance", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop", borderColor: "#522239", backgroundColor: "#f9f5f7", emoji: '📅' },
-  { name: "Jessica Taylor's Promotion", description: "Promoted to Senior Manager", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop", borderColor: "#981239", backgroundColor: "#fef5f8", emoji: '📈' },
-  { name: "Robert Johnson joins Sales", description: "Welcome aboard!", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop", borderColor: "#0085C2", backgroundColor: "#f0f9fd", emoji: '✨' },
-  { name: "Amanda Lee's Birthday", description: "Happy Birthday!", avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=100&h=100&fit=crop", borderColor: "#BE1549", backgroundColor: "#fff5f9", emoji: '🎂' },
-  { name: "James Wilson's Birthday", description: "Happy Birthday!", avatar: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop", borderColor: "#981239", backgroundColor: "#fef5f8", emoji: '🎂' },
-  { name: "Sophia Martinez's Birthday", description: "Happy Birthday!", avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop", borderColor: "#522239", backgroundColor: "#f9f5f7", emoji: '🎂' },
+  {
+    name: "Sarah Chen's Work Anniversary",
+    description: "5 Years in Marketing",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+    borderColor: "#BE1549",
+    backgroundColor: "#fff5f9"
+  },
+  {
+    name: "Michael Brown's Birthday",
+    description: "Happy Birthday!",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+    borderColor: "#0085C2",
+    backgroundColor: "#f0f9fd"
+  },
+  {
+    name: "Emily White joins Engineering",
+    description: "Welcome to the team!",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+    borderColor: "#981239",
+    backgroundColor: "#fef5f8"
+  },
+  {
+    name: "David Martinez's Work Anniversary",
+    description: "10 Years in Finance",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+    borderColor: "#522239",
+    backgroundColor: "#f9f5f7"
+  },
+  {
+    name: "Jessica Taylor's Promotion",
+    description: "Promoted to Senior Manager",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
+    borderColor: "#981239",
+    backgroundColor: "#fef5f8"
+  },
+  {
+    name: "Robert Johnson joins Sales",
+    description: "Welcome aboard!",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+    borderColor: "#0085C2",
+    backgroundColor: "#f0f9fd"
+  },
+  {
+    name: "Amanda Lee's Birthday",
+    description: "Happy Birthday!",
+    avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=100&h=100&fit=crop",
+    borderColor: "#BE1549",
+    backgroundColor: "#fff5f9"
+  },
+  {
+    name: "James Wilson's Birthday",
+    description: "Happy Birthday!",
+    avatar: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop",
+    borderColor: "#981239",
+    backgroundColor: "#fef5f8"
+  },
+  {
+    name: "Sophia Martinez's Birthday",
+    description: "Happy Birthday!",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop",
+    borderColor: "#522239",
+    backgroundColor: "#f9f5f7"
+  },
 ];
 
 export default function App() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef2 = useRef<HTMLDivElement>(null);
-  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const scrollIntervalRef2 = useRef<NodeJS.Timeout | null>(null);
   const resourcesScrollRef = useRef<HTMLDivElement>(null);
   const resourcesScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const newsroomScrollRef = useRef<HTMLDivElement>(null);
   const newsroomScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const milestonesScrollRef = useRef<HTMLDivElement>(null);
-  const milestonesScrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fetchSharePriceDataRef = useRef<(() => Promise<void>) | null>(null);
   
   // State for API data
@@ -239,7 +290,7 @@ export default function App() {
     borderColor: string;
     backgroundColor: string;
     emoji?: string;
-  }>>(employeeMilestones);
+  }>>([]);
   const [payments, setPayments] = useState({ amount_processed: 428000000, transaction_count: 19320 });
   const [systemPerformance, setSystemPerformance] = useState({ uptime_percentage: 99.985, success_rate: 99.62 });
   const [newsroomItems, setNewsroomItems] = useState<Array<{
@@ -268,7 +319,7 @@ export default function App() {
     paymentsTransactionsSubtitle: 'Transactions',
   });
   
-  // Slideshow state (file_url for PDF/uploaded file, embed_url for Power BI/URL)
+  // Slideshow state (PDF/file or Power BI URL)
   const [slideshowState, setSlideshowState] = useState<{
     is_active: boolean;
     type: 'file' | 'url';
@@ -282,7 +333,7 @@ export default function App() {
     file_url: null,
     embed_url: null,
     file_name: null,
-    interval_seconds: 5
+    interval_seconds: 5,
   });
 
   // Top 3 months by revenue value for bar coloring
@@ -448,41 +499,31 @@ export default function App() {
           setRevenueProportions(proportionsRes.value.data);
         }
         if (postsRes.status === 'fulfilled') {
-          const API_BASE = import.meta.env.VITE_API_URL || '';
+          // Transform API response to match component format (include post_url for click-through to LinkedIn)
           const postsData = postsRes.value.data || [];
-          const transformedPosts = postsData.map((post: any) => {
-            const raw = post.image_url;
-            const image = raw
-              ? (raw.startsWith('http://') || raw.startsWith('https://') ? raw : `${API_BASE}${raw.startsWith('/') ? '' : '/'}${raw}`)
-              : undefined;
-            return {
-              author: post.author || 'Corpay',
-              timeAgo: post.time_ago || 'Just now',
-              content: post.content || '',
-              image,
-              likes: post.likes || 0,
-              comments: post.comments || 0
-            };
-          });
+          const transformedPosts = postsData.map((post: any) => ({
+            author: post.author || 'Corpay',
+            timeAgo: post.time_ago || 'Just now',
+            content: post.content || '',
+            image: post.image_url || undefined,
+            likes: post.likes || 0,
+            comments: post.comments || 0,
+            postUrl: post.post_url || undefined
+          }));
           setPosts(transformedPosts.length > 0 ? transformedPosts : linkedInPosts);
         }
         if (crossBorderRes.status === 'fulfilled') {
-          const API_BASE = import.meta.env.VITE_API_URL || '';
+          // Transform API response to match component format (include post_url for click-through to LinkedIn)
           const crossBorderData = crossBorderRes.value.data || [];
-          const transformedCrossBorder = crossBorderData.map((post: any) => {
-            const raw = post.image_url;
-            const image = raw
-              ? (raw.startsWith('http://') || raw.startsWith('https://') ? raw : `${API_BASE}${raw.startsWith('/') ? '' : '/'}${raw}`)
-              : undefined;
-            return {
-              author: post.author || 'Corpay Cross-Border',
-              timeAgo: post.time_ago || 'Just now',
-              content: post.content || '',
-              image,
-              likes: post.likes || 0,
-              comments: post.comments || 0
-            };
-          });
+          const transformedCrossBorder = crossBorderData.map((post: any) => ({
+            author: post.author || 'Corpay Cross-Border',
+            timeAgo: post.time_ago || 'Just now',
+            content: post.content || '',
+            image: post.image_url || undefined,
+            likes: post.likes || 0,
+            comments: post.comments || 0,
+            postUrl: post.post_url || undefined
+          }));
           setCrossBorderPostsList(transformedCrossBorder.length > 0 ? transformedCrossBorder : crossBorderPosts);
         }
         if (employeesRes.status === 'fulfilled') {
@@ -496,15 +537,19 @@ export default function App() {
           };
           // Transform API response to match component format
           const transformedMilestones = employeesData.map((emp: any) => {
+            // Construct full URL for avatar if path exists
             let avatarUrl = 'https://via.placeholder.com/100';
             if (emp.avatar_path) {
+              // If it's already a full URL, use it; otherwise construct from backend
               if (emp.avatar_path.startsWith('http://') || emp.avatar_path.startsWith('https://')) {
                 avatarUrl = emp.avatar_path;
               } else {
+                // Construct URL to backend uploads directory
                 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
                 avatarUrl = `${API_BASE_URL}/uploads/${emp.avatar_path}`;
               }
             }
+            
             return {
               name: emp.name || '',
               description: emp.description || '',
@@ -514,10 +559,11 @@ export default function App() {
               emoji: MILESTONE_EMOJI[emp.milestone_type] || '🎉'
             };
           });
-          setMilestonesList(transformedMilestones.length > 0 ? transformedMilestones : employeeMilestones);
+          setMilestonesList(transformedMilestones);
         } else {
           console.warn('[Initial Load] Employees API failed:', employeesRes.reason);
-          setMilestonesList(employeeMilestones);
+          // Don't use hardcoded data, keep empty array if API fails
+          setMilestonesList([]);
         }
         if (paymentsRes.status === 'fulfilled') {
           console.log('[Initial Load] Payments data from API:', paymentsRes.value.data);
@@ -859,16 +905,21 @@ export default function App() {
             new_hire: '✨',
             achievement: '🏆'
           };
+          // Transform API response to match component format
           const transformedMilestones = employeesData.map((emp: any) => {
+            // Construct full URL for avatar if path exists
             let avatarUrl = 'https://via.placeholder.com/100';
             if (emp.avatar_path) {
+              // If it's already a full URL, use it; otherwise construct from backend
               if (emp.avatar_path.startsWith('http://') || emp.avatar_path.startsWith('https://')) {
                 avatarUrl = emp.avatar_path;
               } else {
+                // Construct URL to backend uploads directory
                 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
                 avatarUrl = `${API_BASE_URL}/uploads/${emp.avatar_path}`;
               }
             }
+            
             return {
               name: emp.name || '',
               description: emp.description || '',
@@ -878,11 +929,11 @@ export default function App() {
               emoji: MILESTONE_EMOJI[emp.milestone_type] || '🎉'
             };
           });
-          setMilestonesList(transformedMilestones.length > 0 ? transformedMilestones : employeeMilestones);
+          setMilestonesList(transformedMilestones);
         }
       } catch (error) {
         console.error('Error fetching employee milestones:', error);
-        setMilestonesList(employeeMilestones);
+        // Don't use hardcoded data - keep empty if API fails
       }
     };
     
@@ -900,23 +951,26 @@ export default function App() {
     // Function to fetch slideshow state (supports file_url for PDFs and embed_url/source for Power BI)
     const fetchSlideshowState = async () => {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const response = await axios.get(`${API_BASE_URL}/api/dashboard/slideshow`, { timeout: 5000 });
+        const base = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+        const response = await axios.get(`${base}/dashboard/slideshow`, { timeout: 5000 });
         if (response.data) {
           const slideshowType: 'file' | 'url' = response.data.type === 'url' ? 'url' : 'file';
-          const embedUrl = (slideshowType === 'url' && response.data.source) ? response.data.source : null;
+          const source = response.data.source || null;
+          const fileUrl = response.data.file_url || (slideshowType === 'file' ? source : null);
+          const embedUrl = slideshowType === 'url' ? source : null;
           const newState = {
             is_active: Boolean(response.data.is_active),
             type: slideshowType,
-            file_url: response.data.file_url || null,
+            file_url: fileUrl,
             embed_url: embedUrl,
             file_name: response.data.file_name || null,
-            interval_seconds: response.data.interval_seconds ?? 5
+            interval_seconds: response.data.interval_seconds ?? 5,
           };
           setSlideshowState(prev => {
             const prevSource = prev.type === 'url' ? prev.embed_url : prev.file_url;
             const nextSource = newState.type === 'url' ? newState.embed_url : newState.file_url;
-            const changed = prev.is_active !== newState.is_active ||
+            const changed =
+              prev.is_active !== newState.is_active ||
               prev.type !== newState.type ||
               prevSource !== nextSource ||
               prev.interval_seconds !== newState.interval_seconds;
@@ -925,7 +979,8 @@ export default function App() {
                 is_active: newState.is_active,
                 type: newState.type,
                 file_url: newState.file_url,
-                embed_url: newState.embed_url
+                embed_url: newState.embed_url,
+                interval_seconds: newState.interval_seconds,
               });
             }
             return newState;
@@ -937,9 +992,9 @@ export default function App() {
       }
     };
     
-    // Poll for slideshow state every 2 seconds
+    // Poll every 1s so slide interval from Admin is picked up quickly (avoids first slide holding for wrong interval)
     fetchSlideshowState(); // Initial fetch
-    const slideshowInterval = setInterval(fetchSlideshowState, 2000);
+    const slideshowInterval = setInterval(fetchSlideshowState, 1000);
     
     return () => {
       clearInterval(interval);
@@ -960,32 +1015,44 @@ export default function App() {
     };
   }, []);
 
+  // When slideshow becomes active, fetch state immediately so interval_seconds is correct before first slide (avoids first page holding for wrong interval)
+  useEffect(() => {
+    if (!slideshowState.is_active) return;
+    const base = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
+    axios.get(`${base}/dashboard/slideshow`, { timeout: 5000 }).then((response) => {
+      if (!response?.data) return;
+      const slideshowType = response.data.type === 'url' ? 'url' : 'file';
+      const source = response.data.source || null;
+      const fileUrl = response.data.file_url || (slideshowType === 'file' ? source : null);
+      const embedUrl = slideshowType === 'url' ? source : null;
+      setSlideshowState({
+        is_active: true,
+        type: slideshowType,
+        file_url: fileUrl,
+        embed_url: embedUrl,
+        file_name: response.data.file_name || null,
+        interval_seconds: response.data.interval_seconds ?? 5,
+      });
+    }).catch(() => {});
+  }, [slideshowState.is_active]);
+
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    let scrollInterval: NodeJS.Timeout;
     let addPostInterval: NodeJS.Timeout;
 
-    const runScroll = () => {
-      if (!scrollContainerRef.current) return;
-      const c = scrollContainerRef.current;
-      if (c.scrollTop + c.clientHeight >= c.scrollHeight - 10) {
-        c.scrollTop = 0;
+    // Auto scroll
+    scrollInterval = setInterval(() => {
+      if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+        container.scrollTop = 0;
       } else {
-        c.scrollTop += 1;
+        container.scrollTop += 1;
       }
-    };
+    }, 40);
 
-    scrollIntervalRef.current = setInterval(runScroll, 40);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
-        scrollIntervalRef.current = setInterval(runScroll, 40);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
+    // Add new posts periodically
     addPostInterval = setInterval(() => {
       setPosts(prev => {
         const newPost = linkedInPosts[Math.floor(Math.random() * linkedInPosts.length)];
@@ -994,9 +1061,7 @@ export default function App() {
     }, 5000);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      if (scrollIntervalRef.current) clearInterval(scrollIntervalRef.current);
-      scrollIntervalRef.current = null;
+      clearInterval(scrollInterval);
       clearInterval(addPostInterval);
     };
   }, []);
@@ -1005,28 +1070,19 @@ export default function App() {
     const container = scrollContainerRef2.current;
     if (!container) return;
 
+    let scrollInterval: NodeJS.Timeout;
     let addPostInterval: NodeJS.Timeout;
 
-    const runScroll = () => {
-      if (!scrollContainerRef2.current) return;
-      const c = scrollContainerRef2.current;
-      if (c.scrollTop + c.clientHeight >= c.scrollHeight - 10) {
-        c.scrollTop = 0;
+    // Auto scroll
+    scrollInterval = setInterval(() => {
+      if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+        container.scrollTop = 0;
       } else {
-        c.scrollTop += 1;
+        container.scrollTop += 1;
       }
-    };
+    }, 40);
 
-    scrollIntervalRef2.current = setInterval(runScroll, 40);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        if (scrollIntervalRef2.current) clearInterval(scrollIntervalRef2.current);
-        scrollIntervalRef2.current = setInterval(runScroll, 40);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
+    // Add new posts periodically
     addPostInterval = setInterval(() => {
       setCrossBorderPostsList(prev => {
         const newPost = crossBorderPosts[Math.floor(Math.random() * crossBorderPosts.length)];
@@ -1035,9 +1091,7 @@ export default function App() {
     }, 5000);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      if (scrollIntervalRef2.current) clearInterval(scrollIntervalRef2.current);
-      scrollIntervalRef2.current = null;
+      clearInterval(scrollInterval);
       clearInterval(addPostInterval);
     };
   }, []);
@@ -1046,62 +1100,40 @@ export default function App() {
     const container = milestonesScrollRef.current;
     if (!container) return;
 
-    const runScroll = () => {
-      if (!milestonesScrollRef.current) return;
-      const c = milestonesScrollRef.current;
-      if (c.scrollTop + c.clientHeight >= c.scrollHeight - 10) {
-        c.scrollTop = 0;
-      } else {
-        c.scrollTop += 1;
-      }
-    };
+    let scrollInterval: NodeJS.Timeout;
 
-    milestonesScrollIntervalRef.current = setInterval(runScroll, 40);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        if (milestonesScrollIntervalRef.current) clearInterval(milestonesScrollIntervalRef.current);
-        milestonesScrollIntervalRef.current = setInterval(runScroll, 40);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      if (milestonesScrollIntervalRef.current) clearInterval(milestonesScrollIntervalRef.current);
-      milestonesScrollIntervalRef.current = null;
-    };
-  }, []);
-
-  // Resources auto-scroll (same as LinkedIn posts) - start after paint so ref and scrollHeight are set
-  useEffect(() => {
-    const runScroll = () => {
-      const container = resourcesScrollRef.current;
-      if (!container) return;
+    // Auto scroll vertically
+    scrollInterval = setInterval(() => {
       if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
         container.scrollTop = 0;
       } else {
         container.scrollTop += 1;
       }
-    };
+    }, 40);
 
-    const startInterval = () => {
-      const container = resourcesScrollRef.current;
-      if (!container || container.scrollHeight <= container.clientHeight) return;
-      if (resourcesScrollIntervalRef.current) clearInterval(resourcesScrollIntervalRef.current);
-      resourcesScrollIntervalRef.current = setInterval(runScroll, 40);
-    };
-
-    const rafId = requestAnimationFrame(startInterval);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') startInterval();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
+    // Employee milestones are now fetched from API only - no auto-adding
 
     return () => {
+      clearInterval(scrollInterval);
+    };
+  }, []);
+
+  // Resources auto-scroll (same as LinkedIn posts) - start after paint so ref and scrollHeight are set
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      const container = resourcesScrollRef.current;
+      if (!container || container.scrollHeight <= container.clientHeight) return;
+      resourcesScrollIntervalRef.current = setInterval(() => {
+        if (!container) return;
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+          container.scrollTop = 0;
+        } else {
+          container.scrollTop += 1;
+        }
+      }, 40);
+    });
+    return () => {
       cancelAnimationFrame(rafId);
-      document.removeEventListener('visibilitychange', handleVisibility);
       if (resourcesScrollIntervalRef.current) {
         clearInterval(resourcesScrollIntervalRef.current);
         resourcesScrollIntervalRef.current = null;
@@ -1111,33 +1143,20 @@ export default function App() {
 
   // Newsroom auto-scroll (same as Resources) - start after paint
   useEffect(() => {
-    const runScroll = () => {
-      const container = newsroomScrollRef.current;
-      if (!container) return;
-      if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
-        container.scrollTop = 0;
-      } else {
-        container.scrollTop += 1;
-      }
-    };
-
-    const startInterval = () => {
+    const rafId = requestAnimationFrame(() => {
       const container = newsroomScrollRef.current;
       if (!container || container.scrollHeight <= container.clientHeight) return;
-      if (newsroomScrollIntervalRef.current) clearInterval(newsroomScrollIntervalRef.current);
-      newsroomScrollIntervalRef.current = setInterval(runScroll, 40);
-    };
-
-    const rafId = requestAnimationFrame(startInterval);
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') startInterval();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
+      newsroomScrollIntervalRef.current = setInterval(() => {
+        if (!container) return;
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+          container.scrollTop = 0;
+        } else {
+          container.scrollTop += 1;
+        }
+      }, 40);
+    });
     return () => {
       cancelAnimationFrame(rafId);
-      document.removeEventListener('visibilitychange', handleVisibility);
       if (newsroomScrollIntervalRef.current) {
         clearInterval(newsroomScrollIntervalRef.current);
         newsroomScrollIntervalRef.current = null;
@@ -1145,16 +1164,19 @@ export default function App() {
     };
   }, [newsroomItems.length]);
 
-  // If slideshow is active, show FullScreenSlideshow (PDF/file or Power BI embed URL)
-  const slideshowSource = slideshowState.type === 'url' ? slideshowState.embed_url : slideshowState.file_url;
+  // If slideshow is active, show only the slideshow (PDF/file or Power BI URL)
+  const slideshowSource =
+    slideshowState.type === 'url' ? slideshowState.embed_url : slideshowState.file_url;
   if (slideshowState.is_active && slideshowSource) {
+    console.log('[App] Rendering slideshow - Active:', slideshowState.is_active, 'type:', slideshowState.type, 'source:', slideshowSource);
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 99999, backgroundColor: '#000' }}>
-        <FullScreenSlideshow
+        <FullScreenSlideshow 
           slideshowType={slideshowState.type}
           source={slideshowSource}
           intervalSeconds={slideshowState.interval_seconds ?? 5}
           onClose={async () => {
+            // When slideshow is closed from frontend, stop it on backend
             const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             try {
               await axios.post(`${API_BASE_URL}/api/admin/slideshow/stop-dev`);
@@ -1166,7 +1188,8 @@ export default function App() {
               type: 'file',
               file_url: null,
               embed_url: null,
-              file_name: null
+              file_name: null,
+              interval_seconds: 5,
             });
           }}
         />
@@ -1174,44 +1197,23 @@ export default function App() {
     );
   }
 
-  /* Dashboard 2 - Final: permanent edge-to-edge TV layout (no query param). */
-  /* LG 55" panel: opt-in via ?tv=1 or preview=lg. Main Dashboard only; Admin unchanged. */
-  const isLg55 = typeof window !== 'undefined' && /[?&](?:tv=1|preview=lg)/i.test(window.location.search);
-
-  useEffect(() => {
-    if (!isLg55) return;
-    const LG55_CLASS = 'lg55-viewport';
-    document.documentElement.classList.add(LG55_CLASS);
-    document.body.classList.add(LG55_CLASS);
-    return () => {
-      document.documentElement.classList.remove(LG55_CLASS);
-      document.body.classList.remove(LG55_CLASS);
-    };
-  }, [isLg55]);
-
   return (
-    <div
-      className={`min-h-full w-full box-border${isLg55 ? ' dashboard-lg55' : ''}`}
-      style={{
-        width: isLg55 ? '100vw' : '100%',
-        margin: 0,
-        padding: isLg55 ? 'clamp(0.5rem, 1.2vh, 1rem)' : '2rem 1.5rem',
-        backgroundImage: `url(${backgroundPattern})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        backgroundColor: '#f5f5f5'
-      }}
-    >
+    <div className="min-h-full w-full p-8 box-border" style={{ 
+      backgroundImage: `url(${backgroundPattern})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed',
+      backgroundColor: '#f5f5f5'
+    }}>
       {/* Header */}
-      <div className={`flex items-center justify-between mb-8${isLg55 ? ' shrink-0' : ''}`}>
+      <div className="flex items-center justify-between mb-8">
         <img src={corpayLogo} alt="Corpay" className="h-10 brightness-0 invert" />
       </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6${isLg55 ? ' dashboard-lg55-content' : ''}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Content - 3 columns */}
-        <div className={`lg:col-span-3 space-y-6${isLg55 ? ' dashboard-lg55-main' : ''}`}>
+        <div className="lg:col-span-3 space-y-6">
           {/* Top Row - Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Total Revenue and Share Price - Stacked */}
@@ -1350,7 +1352,7 @@ export default function App() {
             {/* Employee Milestones */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col md:col-span-3" style={{ height: '400px' }}>
               <p className="mb-4" style={{ fontWeight: 700, color: '#3D1628', fontSize: '18px' }}>Employee Milestones</p>
-              <div ref={milestonesScrollRef} className="milestones-scroll-container overflow-y-auto flex-1 space-y-3 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div ref={milestonesScrollRef} className="overflow-y-auto flex-1 space-y-3 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {milestonesList.map((milestone, index) => (
                   <EmployeeMilestone 
                     key={index}
@@ -1425,8 +1427,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* Third Row - Newsroom + Resources; fixed height in normal mode, flex:1 in LG55 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch min-h-0" style={isLg55 ? undefined : { height: '420px' }}>
+          {/* Third Row - Fixed row height so Newsroom matches Resources column; list scrolls inside */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch min-h-0" style={{ height: '420px' }}>
             {/* Corpay Newsroom - fills row height; list scrolls inside */}
             <div className="min-h-0 flex flex-col h-full overflow-hidden">
               <div
@@ -1443,12 +1445,12 @@ export default function App() {
                 </div>
                 <div
                   ref={newsroomScrollRef}
-                  className="newsroom-container space-y-3 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1"
+                  className="space-y-3 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                 {newsroomItems.map((item, index) => (
                   <CompanyAnnouncement
-                    key={item.url || `newsroom-${index}`}
+                    key={index}
                     title={item.title}
                     date={newsroomDisplayDate(item)}
                     description={item.excerpt || ''}
@@ -1473,16 +1475,16 @@ export default function App() {
                 <p className="mb-3 shrink-0" style={{ fontWeight: 700, color: '#3D1628', fontSize: '18px' }}>Resources</p>
                 <div
                   ref={resourcesScrollRef}
-                  className="resources-container overflow-y-auto overflow-x-hidden flex-1 min-h-0 rounded space-y-4 scrollbar-hide"
+                  className="overflow-y-auto overflow-x-hidden flex-1 min-h-0 rounded space-y-4 scrollbar-hide"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {(Array.isArray(resourceItems) && resourceItems.length > 0 ? resourceItems.slice(0, 8) : fallbackResources).map((item, index) => (
                     <ResourceCard
-                      key={item.url || index}
+                      key={index}
                       title={item.title || 'Resource'}
                       description={item.excerpt || ''}
                       type={index % 2 === 0 ? 'case-study' : 'whitepaper'}
-                      url={item.url}
+                      url={item.url || 'https://www.corpay.com/resources/newsroom'}
                     />
                   ))}
                 </div>
@@ -1491,14 +1493,18 @@ export default function App() {
           </div>
         </div>
 
-        {/* LinkedIn Posts Column - Auto Scrolling; in LG55 mode cards use flex:1 */}
-        <div className={`lg:col-span-1 flex flex-col gap-6${isLg55 ? ' dashboard-lg55-sidebar' : ''}`}>
+        {/* LinkedIn Posts Column - Auto Scrolling */}
+        <div className="lg:col-span-1 flex flex-col gap-6">
+
           {/* Corpay Cross-Border Posts */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col" style={isLg55 ? undefined : { height: '600px' }}>
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col" style={{ height: '600px' }}>
             <p className="mb-4" style={{ fontWeight: 700, color: '#981239', fontSize: '18px' }}>Corpay Cross-Border Posts</p>
-            <div ref={scrollContainerRef2} className="linkedin-scroll-container overflow-y-auto scrollbar-hide flex-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div ref={scrollContainerRef2} className="overflow-y-auto scrollbar-hide flex-1" style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none'
+            }}>
               {crossBorderPostsList.map((post, index) => (
-                <LinkedInPostCard
+                <LinkedInPostCard 
                   key={index}
                   author={post.author}
                   timeAgo={post.timeAgo}
@@ -1507,27 +1513,32 @@ export default function App() {
                   likes={post.likes || 0}
                   comments={post.comments || 0}
                   isCorpayBrand={true}
+                  postUrl={post.postUrl}
                 />
               ))}
             </div>
           </div>
 
           {/* Corpay Posts */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col" style={isLg55 ? undefined : { height: '512px' }}>
-            <p className="mb-4" style={{ fontWeight: 700, color: '#981239', fontSize: '18px' }}>Corpay Posts</p>
-            <div ref={scrollContainerRef} className="linkedin-scroll-container overflow-y-auto scrollbar-hide flex-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {posts.map((post, index) => (
-                <LinkedInPostCard
-                  key={index}
-                  author={post.author}
-                  timeAgo={post.timeAgo}
-                  content={post.content}
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col" style={{ height: '512px' }}> 
+            <p className="mb-4" style={{ fontWeight: 700, color: '#981239', fontSize: '18px' }}>Corpay Posts</p> 
+            <div ref={scrollContainerRef} className="overflow-y-auto scrollbar-hide flex-1" style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none'
+            }}> 
+              {posts.map((post, index) => ( 
+                <LinkedInPostCard 
+                  key={index} 
+                  author={post.author} 
+                  timeAgo={post.timeAgo} 
+                  content={post.content} 
                   image={post.image}
                   likes={post.likes || 0}
                   comments={post.comments || 0}
-                />
-              ))}
-            </div>
+                  postUrl={post.postUrl}
+                /> 
+              ))} 
+            </div> 
           </div>
         </div>
       </div>

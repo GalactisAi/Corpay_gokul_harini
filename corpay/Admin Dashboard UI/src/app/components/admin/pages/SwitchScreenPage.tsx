@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -9,7 +9,57 @@ import { toast } from 'sonner';
 import { Presentation, FileText, BarChart3 } from 'lucide-react';
 import axios from 'axios';
 
+const STORAGE_KEY = 'corpay_admin_switch_screen';
+
 type SourceType = 'pdf' | 'powerbi';
+
+interface StoredSwitchState {
+  sourceType: SourceType;
+  embedUrl: string;
+  slideIntervalSeconds: number;
+}
+
+/** Extract a clean Power BI / embed URL. If user pastes full iframe embed code, strip tags and return only the src URL. */
+function extractEmbedUrl(input: string): string {
+  const raw = (input || '').trim();
+  if (!raw) return '';
+  // If pasted embed code contains iframe, extract src
+  const iframeMatch = raw.match(/<iframe[^>]*\ssrc\s*=\s*["']([^"']+)["']/i) || raw.match(/src\s*=\s*["']([^"']+)["']/i);
+  if (iframeMatch && iframeMatch[1]) {
+    const url = iframeMatch[1].trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  }
+  // Already a plain URL
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  return raw;
+}
+
+function loadStoredState(): StoredSwitchState {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) {
+      const parsed = JSON.parse(s) as StoredSwitchState;
+      if (parsed && typeof parsed.sourceType === 'string' && typeof parsed.embedUrl === 'string' && typeof parsed.slideIntervalSeconds === 'number') {
+        return {
+          sourceType: parsed.sourceType === 'powerbi' ? 'powerbi' : 'pdf',
+          embedUrl: parsed.embedUrl || '',
+          slideIntervalSeconds: Math.max(1, Math.min(300, parsed.slideIntervalSeconds || 5)),
+        };
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return { sourceType: 'pdf', embedUrl: '', slideIntervalSeconds: 5 };
+}
+
+function saveStoredState(state: StoredSwitchState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore
+  }
+}
 
 export function SwitchScreenPage() {
   const [sourceType, setSourceType] = useState<SourceType>('pdf');
@@ -19,6 +69,23 @@ export function SwitchScreenPage() {
   const [isUploadingPpt, setIsUploadingPpt] = useState(false);
   const [isSlideshowActive, setIsSlideshowActive] = useState(false);
   const [slideIntervalSeconds, setSlideIntervalSeconds] = useState<number>(5);
+
+  // Device-specific state: restore from localStorage on mount (each device/branch has its own)
+  useEffect(() => {
+    const stored = loadStoredState();
+    setSourceType(stored.sourceType);
+    setEmbedUrl(stored.embedUrl);
+    setSlideIntervalSeconds(stored.slideIntervalSeconds);
+  }, []);
+
+  // Persist when user changes source type, embed URL, or interval (device-specific)
+  useEffect(() => {
+    saveStoredState({
+      sourceType,
+      embedUrl,
+      slideIntervalSeconds,
+    });
+  }, [sourceType, embedUrl, slideIntervalSeconds]);
 
   const uploadPptFile = async (file: File): Promise<string | null> => {
     setIsUploadingPpt(true);
@@ -126,9 +193,10 @@ export function SwitchScreenPage() {
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     if (sourceType === 'powerbi') {
-      const url = embedUrl.trim();
+      const raw = embedUrl.trim();
+      const url = extractEmbedUrl(raw);
       if (!url) {
-        toast.error('Please enter a Power BI Embed URL');
+        toast.error('Please enter a Power BI Embed URL (or paste the full embed iframe code)');
         return;
       }
       try {
@@ -316,12 +384,20 @@ export function SwitchScreenPage() {
                 <Input
                   id="embedUrl"
                   type="url"
-                  placeholder="https://app.powerbi.com/..."
+                  placeholder="https://app.powerbi.com/... or paste full iframe embed code"
                   value={embedUrl}
                   onChange={(e) => setEmbedUrl(e.target.value)}
+                  onPaste={(e) => {
+                    const pasted = (e.clipboardData?.getData('text') || '').trim();
+                    const cleaned = extractEmbedUrl(pasted);
+                    if (cleaned && cleaned !== pasted) {
+                      e.preventDefault();
+                      setEmbedUrl(cleaned);
+                    }
+                  }}
                   className="bg-white/10 border-white/20 text-white"
                 />
-                <p className="text-xs text-gray-400">Paste the Power BI embed URL to display the report in full screen.</p>
+                <p className="text-xs text-gray-400">Paste the Power BI embed URL or full iframe embed code; the URL will be extracted automatically.</p>
               </div>
             )}
           </Tabs>

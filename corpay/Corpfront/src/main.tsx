@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { registerSW } from 'virtual:pwa-register';
+import { ErrorBoundary } from "./ErrorBoundary";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -14,8 +15,10 @@ registerSW({
 const isTvPreview = typeof window !== "undefined" && /[?&](?:tv=1|preview=lg)/i.test(window.location.search);
 
 createRoot(document.getElementById("root")!).render(
-  <div className={`corpfront-16-9${isTvPreview ? " corpfront-tv-preview" : ""}`}>
-    <App />
-  </div>
+  <ErrorBoundary>
+    <div className={`corpfront-16-9${isTvPreview ? " corpfront-tv-preview" : ""}`}>
+      <App />
+    </div>
+  </ErrorBoundary>
 );
   

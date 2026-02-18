@@ -1,6 +1,8 @@
 import { Linkedin } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
+const CORPAY_LINKEDIN_POSTS_URL = 'https://www.linkedin.com/company/corpay/posts/';
+
 interface LinkedInPostCardProps {
   author: string;
   timeAgo: string;
@@ -9,11 +11,19 @@ interface LinkedInPostCardProps {
   likes?: number;
   comments?: number;
   isCorpayBrand?: boolean;
+  /** When set, clicking the card opens this LinkedIn post URL; otherwise opens Corpay company posts page */
+  postUrl?: string | null;
 }
 
-export function LinkedInPostCard({ author, timeAgo, content, image, likes = 0, comments = 0, isCorpayBrand = false }: LinkedInPostCardProps) {
+export function LinkedInPostCard({ author, timeAgo, content, image, likes = 0, comments = 0, isCorpayBrand = false, postUrl }: LinkedInPostCardProps) {
+  const href = (postUrl && (postUrl.startsWith('http://') || postUrl.startsWith('https://'))) ? postUrl : CORPAY_LINKEDIN_POSTS_URL;
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-4 flex-shrink-0 overflow-hidden transition-all duration-300 hover:shadow-md hover:border-gray-200">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block bg-white rounded-lg shadow-sm border border-gray-100 mb-4 flex-shrink-0 overflow-hidden transition-all duration-300 hover:shadow-md hover:border-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#981239] focus-visible:ring-offset-2"
+    >
       {/* Header */}
       <div className="p-4 pb-3">
         <div className="flex items-center gap-3 mb-3">
@@ -46,6 +56,6 @@ export function LinkedInPostCard({ author, timeAgo, content, image, likes = 0, c
           />
         </div>
       )}
-    </div>
+    </a>
   );
 }

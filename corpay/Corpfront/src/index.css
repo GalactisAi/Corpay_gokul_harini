@@ -1283,143 +1283,31 @@ html {
   initial-value: 1;
 }
 
-/* Base layout: full-width edge-to-edge; natural page scroll. */
-html {
-  width: 100%;
-  margin: 0;
-  overflow-x: auto;
-}
-
+/* LG 55TR3DK 55" Interactive Panel: 3840×2160 (16:9). Constrain app to 16:9 so it fits exactly on the TV. */
+html,
 body {
   width: 100%;
+  height: 100%;
   margin: 0;
-  height: auto !important;
-  overflow: auto !important;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 #root {
   width: 100%;
   min-height: 100%;
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   background: #0a0a0a;
 }
 
-/* Dashboard 2 Final: one scroll container so scrollbar and mouse wheel stay in sync. */
-html:has(.corpfront-16-9),
-body:has(.corpfront-16-9) {
-  height: 100% !important;
-  min-height: 100vh !important;
-  overflow: hidden !important;
-}
-#root:has(.corpfront-16-9) {
-  height: 100% !important;
-  min-height: 100vh !important;
-  overflow: hidden !important;
-}
-
-/* LG 55" / Dashboard 2 Final: mouse scroll enabled; edge-to-edge kept. No viewport lock. */
-html.lg55-viewport,
-body.lg55-viewport {
-  min-height: 100vh !important;
-  width: 100vw !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  margin: 0 !important;
-}
-html.lg55-viewport #root,
-body.lg55-viewport #root {
-  min-height: 100vh !important;
-  width: 100% !important;
-  max-width: none !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-}
-html.lg55-viewport .corpfront-16-9,
-body.lg55-viewport .corpfront-16-9 {
-  width: 100% !important;
-  max-width: none !important;
-  min-height: 100vh !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-}
-
-/* LG 55" panel / Dashboard 2 Final: layout; main page scrolls, cards keep inner scroll. */
-.dashboard-lg55 {
-  min-height: 100vh;
-  overflow-x: hidden;
-  overflow-y: visible;
-  display: flex;
-  flex-direction: column;
-  width: 100vw !important;
-  max-width: none !important;
-  margin: 0 !important;
-  box-sizing: border-box;
-  --dash-fs-heading: clamp(1rem, 1.3vh, 1.35rem);
-  --dash-fs-body: clamp(0.875rem, 1.1vh, 1.1rem);
-  --dash-pad: clamp(0.75rem, 1.2vh, 1.25rem);
-}
-.dashboard-lg55 .dashboard-lg55-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: visible;
-  display: flex;
-  flex-direction: column;
-}
-.dashboard-lg55 .dashboard-lg55-main {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: visible;
-}
-.dashboard-lg55 .dashboard-lg55-main > *:nth-child(1),
-.dashboard-lg55 .dashboard-lg55-main > *:nth-child(2) {
-  flex-shrink: 0;
-}
-.dashboard-lg55 .dashboard-lg55-main > *:nth-child(3) {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: visible;
-}
-.dashboard-lg55 .dashboard-lg55-sidebar {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: visible;
-}
-.dashboard-lg55 .dashboard-lg55-sidebar > * {
-  flex: 0 0 auto;
-  min-height: 0;
-  overflow: visible;
-  height: auto !important;
-}
-/* Only the inner list areas scroll; main page scroll handles the rest so no conflict. */
-.dashboard-lg55 .dashboard-lg55-sidebar .linkedin-scroll-container {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.dashboard-lg55 [style*="18px"] {
-  font-size: var(--dash-fs-heading) !important;
-}
-.dashboard-lg55 .newsroom-container,
-.dashboard-lg55 .resources-container,
-.dashboard-lg55 .linkedin-scroll-container {
-  overflow-y: auto;
-  min-height: 0;
-  overscroll-behavior: contain;
-}
-
-/* Main app wrapper: single scroll container so scrollbar + mouse wheel both scroll this. */
 .corpfront-16-9 {
-  width: 100%;
-  height: 100vh;
-  min-height: 100vh;
-  overflow-x: hidden;
-  overflow-y: auto;
+  aspect-ratio: 16 / 9;
+  width: min(100vw, 100vh * 16 / 9);
+  height: min(100vh, 100vw * 9 / 16);
+  overflow: auto;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
 }
 
 /* Laptop preview: scale 16:9 frame to fit screen so you see exactly how it will look on the LG panel */
@@ -1467,37 +1355,4 @@ body.lg55-viewport .corpfront-16-9 {
 }
 .newsroom-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(152, 18, 57, 0.7);
-}
-
-/* PWA standalone: prevent pull-to-refresh from interrupting JS scroll intervals */
-html, body {
-  overscroll-behavior-y: contain;
-}
-
-/* Scrollable sections (Newsroom, Resources, LinkedIn, Milestones) - PWA-safe height/overflow */
-.newsroom-container,
-.resources-container,
-.linkedin-scroll-container,
-.milestones-scroll-container {
-  overscroll-behavior-y: contain;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  height: 100%;
-}
-
-@media (display-mode: standalone) {
-  html, body {
-    overscroll-behavior-y: contain;
-  }
-  .newsroom-container,
-  .resources-container,
-  .linkedin-scroll-container,
-  .milestones-scroll-container {
-    overscroll-behavior-y: contain;
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
-    height: 100% !important;
-  }
 }

@@ -8,6 +8,19 @@ interface FullScreenSlideshowProps {
   onClose?: () => void;
 }
 
+/** Ensure embed URL is a plain URL; strip iframe tags if backend ever stored full embed code. */
+function normalizeEmbedUrl(input: string): string {
+  const raw = (input || '').trim();
+  if (!raw) return '';
+  const iframeMatch = raw.match(/<iframe[^>]*\ssrc\s*=\s*["']([^"']+)["']/i) || raw.match(/src\s*=\s*["']([^"']+)["']/i);
+  if (iframeMatch?.[1]) {
+    const url = iframeMatch[1].trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  }
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  return raw;
+}
+
 const loadingScreenStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0,
@@ -35,7 +48,9 @@ export function FullScreenSlideshow({ slideshowType, source, intervalSeconds = 5
   const [error, setError] = useState<string | null>(null);
   const [loadingSlow, setLoadingSlow] = useState(false);
 
+  // Clamp to 1–300 seconds; use exact value so 1 sec really means 1 sec
   const intervalSec = Math.max(1, Math.min(300, Number(intervalSeconds) || 5));
+  const intervalMs = intervalSec * 1000;
 
   useEffect(() => {
     if (slideshowType === 'url') {
@@ -52,15 +67,13 @@ export function FullScreenSlideshow({ slideshowType, source, intervalSeconds = 5
     return () => clearTimeout(t);
   }, [loading]);
 
-  // Auto-advance slides every intervalSeconds (must be before any early returns - Rules of Hooks)
+  // Auto-advance every intervalMs (first tick after intervalMs, so first slide shows for exactly that long)
   useEffect(() => {
     if (slides.length <= 1) return;
-    const ms = Math.max(1000, intervalSec * 1000);
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % slides.length);
-    }, ms);
+    const ms = Math.max(1000, intervalMs);
+    const timer = setInterval(() => setCurrentIndex((prev) => (prev + 1) % slides.length), ms);
     return () => clearInterval(timer);
-  }, [slides.length, intervalSec]);
+  }, [slides.length, intervalMs]);
 
   const loadSlides = async () => {
     try {
@@ -93,6 +106,7 @@ export function FullScreenSlideshow({ slideshowType, source, intervalSeconds = 5
   };
 
   if (slideshowType === 'url') {
+    const embedSrc = normalizeEmbedUrl(source);
     return (
       <div style={{
         position: 'fixed',
@@ -109,7 +123,7 @@ export function FullScreenSlideshow({ slideshowType, source, intervalSeconds = 5
       }}>
         <iframe
           title="Power BI or Embed"
-          src={source}
+          src={embedSrc || source}
           style={{
             width: '100%',
             height: '100%',

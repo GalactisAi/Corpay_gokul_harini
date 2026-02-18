@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-5a5d9309'], (function (workbox) { 'use strict';
+define(['./workbox-38bb0eb2'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -79,11 +79,16 @@ define(['./workbox-5a5d9309'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "0.6uli63uatr8"
+    "revision": "0.o5rgk4lbs78"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
-    allowlist: [/^\/$/]
+    allowlist: [/^\/$/],
+    denylist: [/^\/api\//, /\.pdf$/i, /^https?:\/\/.*powerbi\.com/i, /^https?:\/\/.*analysis\.windows\.net/i]
   }));
+  workbox.registerRoute(/^https:\/\/(?:app\.powerbi\.com|.*\.powerbi\.com|.*\.analysis\.windows\.net)\/.*/i, new workbox.NetworkOnly({
+    "cacheName": "powerbi-network-only",
+    plugins: []
+  }), 'GET');
 
 }));
