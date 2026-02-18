@@ -1237,7 +1237,7 @@ export default function App() {
                   <p className="text-xs text-gray-500">Corpay Share Price</p>
                 </div>
                 <p style={{ fontWeight: 700, color: '#230C18', fontSize: '28px', lineHeight: '1', marginBottom: '8px' }}>
-                  ₹ {sharePrice.price > 0 ? sharePrice.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                  $ {sharePrice.price > 0 ? sharePrice.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                 </p>
                 <div className="flex items-center gap-1">
                   <span style={{ color: '#0085C2', fontSize: '16px', fontWeight: 600 }}>

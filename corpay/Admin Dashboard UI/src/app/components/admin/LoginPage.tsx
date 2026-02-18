@@ -16,7 +16,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  // Use relative URL to leverage Vite proxy (avoids CORS issues)
+  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +30,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/api/admin/auth/login`,
+        `${API_BASE_URL}/admin/auth/login`,
         {
           email,
           password,
@@ -56,7 +57,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       console.error('Login error:', error);
       const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error';
       const errorMessage = isNetworkError
-        ? 'Cannot reach server. Ensure the backend is running at http://localhost:8000 and CORS allows this origin.'
+        ? 'Cannot reach server. Ensure the backend is running at http://localhost:8000.'
         : (error.response?.data?.detail || error.message || 'Login failed');
       toast.error(errorMessage);
     } finally {
