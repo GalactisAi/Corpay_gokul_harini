@@ -1,8 +1,8 @@
 """
 Corpay Newsroom Scraper
 Fetches the latest items from the public Corpay corporate newsroom.
-
-Source: `https://www.corpay.com/corporate-newsroom?limit=10&years=&categories=&search=`
+Uses limit=20 so newest posts (e.g. Feb 11 at 8:30 AM) are not cut off by featured items.
+Source: `https://www.corpay.com/corporate-newsroom?limit=20&years=&categories=&search=`
 """
 from typing import List, Dict
 import json
@@ -12,10 +12,29 @@ import time
 import httpx
 from bs4 import BeautifulSoup
 
-CORPAY_NEWSROOM_URL = "https://www.corpay.com/corporate-newsroom?limit=10&years=&categories=&search="
+CORPAY_NEWSROOM_URL = "https://www.corpay.com/corporate-newsroom?limit=20&years=&categories=&search="
 CORPAY_RESOURCES_NEWSROOM_URL = "https://www.corpay.com/resources/newsroom?page=2"
 CORPAY_CUSTOMER_STORIES_BASE = "https://www.corpay.com/resources/customer-stories"
 DEBUG_LOG_PATH = "/Users/madhujitharumugam/Desktop/latest_corpgit/corpay/.cursor/debug.log"
+# Agent debug log (NDJSON) for this session
+_AGENT_LOG_PATH = r"d:\Galatics Projects\Corpay\Corpupdated\.cursor\debug.log"
+
+def _agent_log(location: str, message: str, data: dict, hypothesis_id: str = ""):
+  # region agent log
+  try:
+    import time as _t
+    import os
+    _dir = os.path.dirname(_AGENT_LOG_PATH)
+    if _dir:
+      os.makedirs(_dir, exist_ok=True)
+    payload = {"id": f"log_{int(_t.time()*1000)}", "timestamp": int(_t.time()*1000), "location": location, "message": message, "data": data}
+    if hypothesis_id:
+      payload["hypothesisId"] = hypothesis_id
+    with open(_AGENT_LOG_PATH, "a", encoding="utf-8") as f:
+      f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+  except Exception:
+    pass
+  # endregion agent log
 
 # Junk text that must not be shown as a date (e.g. UI labels from the page)
 _DATE_JUNK = frozenset({"is showing", "showing", "show", "view", "read more", "—", "-", ""})
@@ -29,25 +48,36 @@ _VALID_DATE_PATTERN = re.compile(
     r"\d{1,2}[\s/\-]\d{1,2}[\s/\-](?:19|20)\d{2}"
 )
 
-# Faded date on Corpay listing: "January 27, 2026 at 9:00 AM" or "Jan 22, 2026 at 4:05 PM"
+# Faded date on Corpay listing; "at" optional so "Feb 11, 2026 8:30 AM" or "Feb 11, 2026 at 8:30 AM" both match
 _FADED_DATE_TIME_RE = re.compile(
-    r"(January|February|March|April|May|June|July|August|September|October|November|December|Jan\.?|Feb\.?|Mar\.?|Apr\.?|Jun\.?|Jul\.?|Aug\.?|Sep\.?|Oct\.?|Nov\.?|Dec\.?)\s+\d{1,2},?\s+\d{4}(\s+at\s+\d{1,2}:\d{2}\s*[AP]M)?",
+    r"(January|February|March|April|May|June|July|August|September|October|November|December|Jan\.?|Feb\.?|Mar\.?|Apr\.?|Jun\.?|Jul\.?|Aug\.?|Sep\.?|Oct\.?|Nov\.?|Dec\.?)\s+\d{1,2},?\s+\d{4}(?:(?:\s*at\s*)?\d{1,2}:\d{2}\s*[AP]M)?",
     re.I,
 )
 
 
 def _is_valid_date_text(s: str) -> bool:
-    """Return True only if s looks like a real date; reject junk like 'is showing'."""
-    if not s or not isinstance(s, str):
-        return False
+    """Return True if s looks like a real date or is empty. Do not discard items with parsing issues. Allow time strings like 'February 11, 2026 at 8:30 AM' (up to 120 chars)."""
+    if not s or s.strip() == "":
+        return True
     t = s.strip().lower()
-    if t in _DATE_JUNK or len(t) > 80:
-        return False
-    # Accept "January 27, 2026 at 9:00 AM" style (faded dates on Corpay listing)
+    if t in _DATE_JUNK:
+      # region agent log
+      _agent_log("newsroom_scraper.py:_is_valid_date_text", "REJECTED DATE (junk)", {"date_text": s, "len": len(s)}, "H1")
+      # endregion agent log
+      return False
+    # Accept Corpay listing format first (e.g. "February 11, 2026 at 8:30 AM")
     if _FADED_DATE_TIME_RE.search(s):
         return True
+    if len(t) > 120:
+      # region agent log
+      _agent_log("newsroom_scraper.py:_is_valid_date_text", "REJECTED DATE (length)", {"date_text": s, "len": len(t), "limit": 120}, "H1")
+      # endregion agent log
+      return False
     if not _VALID_DATE_PATTERN.search(s):
-        return False
+      # region agent log
+      _agent_log("newsroom_scraper.py:_is_valid_date_text", "REJECTED DATE (regex)", {"date_text": s, "len": len(s)}, "H1")
+      # endregion agent log
+      return False
     return True
 
 
@@ -139,183 +169,83 @@ def _debug_log(run_id: str, hypothesis_id: str, location: str, message: str, dat
   # endregion agent log
 
 
-async def fetch_corpay_newsroom(limit: int = 5) -> List[Dict]:
+async def fetch_corpay_newsroom(limit: int = 12) -> List[Dict]:
   """
   Fetch and parse the latest newsroom items from corpay.com.
-
-  The HTML structure of the site may evolve over time, so this parser is written
-  to be defensive and tolerate minor changes. If parsing fails we simply
-  return an empty list so the frontend can fall back gracefully.
+  Uses official page structure: div.corporate-newsroom_article-container with
+  span.corporate-newsroom_date, span.corporate-newsroom_tag, and article link.
+  Returns items sorted by publish datetime (newest first).
   """
+  from datetime import datetime as _dt
+
   items: List[Dict] = []
-
+  seen_urls: set = set()
   try:
-    _debug_log("newsroom-pre", "N1", "newsroom_scraper.py:fetch_corpay_newsroom:start",
-               "Starting fetch_corpay_newsroom", {"limit": limit, "url": CORPAY_NEWSROOM_URL})
-
-    # 5s connect timeout (fail fast if unreachable), 10s read timeout
-    # Use browser-like headers so Corpay returns full HTML (same as in browser); without them
-    # the server may return minimal/bot HTML and the parser finds no <h2> article entries.
     async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, read=10.0)) as client:
       response = await client.get(CORPAY_NEWSROOM_URL, headers=CUSTOMER_STORIES_HEADERS)
-      _debug_log("newsroom-pre", "N2", "newsroom_scraper.py:fetch_corpay_newsroom:response",
-                 "Fetched newsroom HTML", {"status": response.status_code})
       response.raise_for_status()
-
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # On the corporate newsroom page, each entry is headed by an <h2>.
-    # This is similar to the /resources/newsroom structure and is more
-    # robust than relying on specific <article> wrappers, which may not
-    # be present or may change.
-    main = soup.find("main") or soup
-    h2_nodes = list(main.find_all("h2"))
-    _debug_log("newsroom-pre", "N3", "newsroom_scraper.py:fetch_corpay_newsroom:parsed",
-               "Parsed newsroom HTML", {"h2Count": len(h2_nodes)})
+    article_containers = soup.find_all("div", class_=re.compile("corporate-newsroom_article-container"))
+    for container in article_containers:
+      # Robust date: prefer p.corporate-newsroom_date-time > span.corporate-newsroom_date, else span with class, else span containing "2026"
+      date_span = None
+      date_p = container.find("p", class_=re.compile("corporate-newsroom_date-time"))
+      if date_p:
+        date_span = date_p.find("span", class_=re.compile("corporate-newsroom_date"))
+      if not date_span:
+        date_span = container.find("span", class_=re.compile("corporate-newsroom_date"))
+      if not date_span:
+        for span in container.find_all("span"):
+          if "2026" in (span.get_text() or ""):
+            date_span = span
+            break
+      tag_span = container.find("span", class_=re.compile("corporate-newsroom_tag"))
+      link = container.find("a", href=re.compile(r"/corporate-newsroom/"))
+      if not link or not link.get("href"):
+        continue
+      href = (link.get("href") or "").strip()
+      full_url = href if href.startswith("http") else f"https://www.corpay.com{href}"
+      if full_url in seen_urls:
+        continue
+      seen_urls.add(full_url)
 
-    _date_re = re.compile(
-        r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}"
-        r"|\d{1,2}[\s/\-]\d{1,2}[\s/\-]\d{2,4}"
-        r"|\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}",
-        re.I,
-    )
-
-    def _extract_date_from_element(container) -> str:
-        """Extract first valid date from a BeautifulSoup element. Prefer faded 'Month DD, YYYY at H:MM AM/PM' style."""
-        out = ""
-        if hasattr(container, "get_text"):
-            full_text = container.get_text(separator=" ", strip=True) or ""
-            # First try the exact faded date format from Corpay listing (above each heading)
-            m = _FADED_DATE_TIME_RE.search(full_text)
-            if m:
-                out = m.group(0).strip()
-        if not out:
-            time_el = container.find("time") if hasattr(container, "find") else None
-            if time_el:
-                out = time_el.get_text(strip=True) or ""
-                if not out and time_el.get("datetime"):
-                    try:
-                        from datetime import datetime
-                        dt = datetime.fromisoformat(time_el["datetime"].replace("Z", "+00:00")[:10])
-                        out = dt.strftime("%b %d, %Y")
-                    except Exception:
-                        out = time_el["datetime"][:10]
-        if not out and hasattr(container, "find_all"):
-            for el in container.find_all(class_=re.compile(r"date|time|meta", re.I)):
-                t = (el.get_text(strip=True) or "").strip()
-                if t and re.search(r"\d{1,2}[\s/\-]\d{1,2}[\s/\-]\d{2,4}|\d{4}[\s/\-]\d{1,2}[\s/\-]\d{1,2}|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4}", t):
-                    out = t
-                    break
-        if not out and hasattr(container, "get_text"):
-            full_text = container.get_text(separator=" ", strip=True) or ""
-            m = _date_re.search(full_text)
-            if m:
-                out = m.group(0).strip()
-        return out
-
-    for h2 in h2_nodes:
-      title = (h2.get_text(strip=True) or "").strip()
+      date_text = " ".join(date_span.stripped_strings) if date_span else ""
+      date_text = re.sub(r"\s*at\s*", " at ", date_text)
+      date_text = re.sub(r"\s+", " ", date_text).strip()
+      category = (tag_span.get_text(strip=True) if tag_span else "").strip() or "Press Releases"
+      title = (link.get_text(separator=" ", strip=True) if link else "").strip()
       if not title:
         continue
 
-      # Find the first sibling link that points to the full article.
-      link = h2.find_next("a", href=True)
-      href = link["href"] if link else ""
-      if not href:
-        continue
+      parsed_datetime = None
+      if date_text:
+        print(f"DEBUG: Found Raw Date: '{date_text}'")
+        try:
+          parsed_datetime = _dt.strptime(date_text, "%B %d, %Y at %I:%M %p")
+        except Exception:
+          try:
+            parsed_datetime = _dt.strptime(date_text, "%B %d, %Y")
+          except Exception:
+            try:
+              parsed_datetime = _dt.strptime(date_text, "%b %d, %Y")
+            except Exception:
+              parsed_datetime = None
 
-      container = h2.find_parent("article") or h2.parent
-      date_text = ""
-      category = ""
-      excerpt = ""
+      items.append({
+        "title": title,
+        "url": full_url,
+        "date": date_text,
+        "datetime": parsed_datetime,
+        "category": category,
+        "excerpt": "",
+      })
 
-      if container:
-        # Date: search in container, then walk up ancestors (wider block) so we catch date above title.
-        date_text = _extract_date_from_element(container)
-        if not date_text:
-          prev = h2.find_previous_sibling()
-          while prev and prev.name != "h2":
-            if hasattr(prev, "get_text"):
-              date_text = _extract_date_from_element(prev)
-              if date_text:
-                break
-            prev = prev.find_previous_sibling() if hasattr(prev, "find_previous_sibling") else None
-        if not date_text:
-          sibling = h2.find_next_sibling()
-          next_h2 = h2.find_next("h2")
-          while sibling and sibling != next_h2:
-            date_text = _extract_date_from_element(sibling)
-            if date_text:
-              break
-            sibling = sibling.find_next_sibling() if hasattr(sibling, "find_next_sibling") else None
-        # Search up to 5 levels of parents (wider block) for date.
-        if not date_text:
-          ancestor = container
-          for _ in range(5):
-            if ancestor is None:
-              break
-            date_text = _extract_date_from_element(ancestor)
-            if date_text:
-              break
-            ancestor = ancestor.parent if hasattr(ancestor, "parent") else None
-
-        # Category label (e.g. "Press Releases") often appears in a nearby span/a.
-        cat_el = container.find(
-          ["span", "a"],
-          string=lambda s: isinstance(s, str) and "Press Releases" in s,
-        )
-        if cat_el:
-          category = cat_el.get_text(strip=True)
-
-        # First paragraph of the article listing as short excerpt.
-        para = container.find("p")
-        if para:
-          excerpt = para.get_text(strip=True)
-
-      # Only send date if it looks like a real date; reject junk like "is showing"
-      if not _is_valid_date_text(date_text):
-        date_text = ""
-      # Fallback: try to get date from article URL (e.g. /2025/01/15/article-slug)
-      if not date_text:
-        full_url = href if href.startswith("http") else f"https://www.corpay.com{href}"
-        date_text = _date_from_url(full_url)
-      # Normalize "January 27, 2026 at 9:00 AM" -> "January 27, 2026"
-      if date_text and " at " in date_text:
-        date_text = date_text.split(" at ")[0].strip()
-
-      items.append(
-        {
-          "title": title,
-          "url": href if href.startswith("http") else f"https://www.corpay.com{href}",
-          "date": date_text,
-          "category": category or "Press Releases",
-          "excerpt": excerpt,
-        }
-      )
-
-      if len(items) >= limit:
-        break
-
-    # For any item still missing a date, fetch the article page and extract date from that URL.
-    missing_date_items = [i for i in items if not (i.get("date") or "").strip()]
-    if missing_date_items:
-      async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, read=10.0)) as client:
-        for it in missing_date_items:
-          fetched = await _fetch_date_from_article_page(client, it["url"])
-          if fetched and _is_valid_date_text(fetched):
-            it["date"] = fetched
-
-  except Exception as e:
-    _debug_log("newsroom-pre", "N4", "newsroom_scraper.py:fetch_corpay_newsroom:exception",
-               "Exception in fetch_corpay_newsroom", {"error": str(e)})
-    # Fail quietly – the dashboard can still render without newsroom content.
+  except Exception:
     return []
 
-  _debug_log("newsroom-pre", "N5", "newsroom_scraper.py:fetch_corpay_newsroom:end",
-             "Returning newsroom items", {"returnedCount": len(items)})
-
-  # Keep original page order (already newest-first on corpay.com)
-  return items
+  items = sorted(items, key=lambda x: x.get("datetime") or _dt.min, reverse=True)
+  return items[:limit]
 
 
 async def fetch_corpay_resources_newsroom(limit: int = 4) -> List[Dict]:
@@ -425,14 +355,15 @@ async def fetch_corpay_resources_newsroom(limit: int = 4) -> List[Dict]:
 
       if not _is_valid_date_text(date_text):
         date_text = ""
+      # Ensure every article has an absolute URL (relative e.g. /resources/... -> https://www.corpay.com/...)
+      full_url = href if href.startswith("http") else f"https://www.corpay.com{href}"
       if not date_text:
-        full_url = href if href.startswith("http") else f"https://www.corpay.com{href}"
         date_text = _date_from_url(full_url)
 
       items.append(
         {
           "title": title,
-          "url": href if href.startswith("http") else f"https://www.corpay.com{href}",
+          "url": full_url,
           "date": date_text,
           "category": category,
           "excerpt": excerpt,
@@ -584,4 +515,3 @@ async def fetch_corpay_customer_stories(limit: int = 12, max_pages: int = 3) -> 
     return items
 
   return items[:limit]
-

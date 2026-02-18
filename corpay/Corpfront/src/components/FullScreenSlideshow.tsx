@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import JSZip from 'jszip';
 import axios from 'axios';
 
 interface FullScreenSlideshowProps {
-  fileUrl: string;
+  slideshowType: 'file' | 'url';
+  source: string;
   intervalSeconds?: number;
   onClose?: () => void;
 }
@@ -28,18 +28,22 @@ const loadingScreenStyle: React.CSSProperties = {
   fontSize: '24px',
 };
 
-export function FullScreenSlideshow({ fileUrl, intervalSeconds = 5, onClose }: FullScreenSlideshowProps) {
+export function FullScreenSlideshow({ slideshowType, source, intervalSeconds = 5, onClose }: FullScreenSlideshowProps) {
   const [slides, setSlides] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(slideshowType === 'file');
   const [error, setError] = useState<string | null>(null);
   const [loadingSlow, setLoadingSlow] = useState(false);
 
   const intervalSec = Math.max(1, Math.min(300, Number(intervalSeconds) || 5));
 
   useEffect(() => {
+    if (slideshowType === 'url') {
+      setLoading(false);
+      return;
+    }
     loadSlides();
-  }, [fileUrl]);
+  }, [slideshowType, source]);
 
   // Show "taking longer" hint after 12 seconds
   useEffect(() => {
@@ -87,6 +91,56 @@ export function FullScreenSlideshow({ fileUrl, intervalSeconds = 5, onClose }: F
       setLoading(false);
     }
   };
+
+  if (slideshowType === 'url') {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        padding: 0,
+        backgroundColor: '#000',
+        zIndex: 99999,
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <iframe
+          title="Power BI or Embed"
+          src={source}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none'
+          }}
+          onError={() => setError('Failed to load embed URL')}
+        />
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              zIndex: 100000,
+              padding: '8px 16px',
+              fontSize: 14,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              color: '#fff',
+              border: '1px solid #fff',
+              borderRadius: 4,
+              cursor: 'pointer'
+            }}
+          >
+            Close
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -157,6 +211,27 @@ export function FullScreenSlideshow({ fileUrl, intervalSeconds = 5, onClose }: F
       display: 'flex',
       flexDirection: 'column'
     }}>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            zIndex: 100000,
+            padding: '8px 16px',
+            fontSize: 14,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            color: '#fff',
+            border: '1px solid #fff',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}
+        >
+          Close
+        </button>
+      )}
       {/* Slide display only - no header or navigation buttons */}
       <div style={{ 
         flex: 1, 

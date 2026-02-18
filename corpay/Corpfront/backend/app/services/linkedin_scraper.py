@@ -174,11 +174,20 @@ class LinkedInAPIClient:
         return posts
     
     def _extract_image_url(self, post_data: Dict) -> Optional[str]:
-        """Extract image URL from LinkedIn post data"""
+        """Extract image URL from LinkedIn post data. Returns absolute URL (prefixes relative paths with LinkedIn base)."""
         # LinkedIn API structure for images
         media = post_data.get("specificContent", {}).get("com.linkedin.ugc.ShareContent", {}).get("media", [])
         if media and len(media) > 0:
-            return media[0].get("originalUrl")
+            raw = media[0].get("originalUrl")
+            if not raw:
+                return None
+            raw = (raw or "").strip()
+            if not raw:
+                return None
+            # Ensure absolute URL for correct loading in frontend
+            if raw.startswith("http://") or raw.startswith("https://"):
+                return raw
+            return urljoin("https://www.linkedin.com", raw)
         return None
     
     def _calculate_time_ago(self, timestamp_ms: int) -> str:

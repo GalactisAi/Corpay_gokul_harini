@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -9,8 +9,68 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { postsService } from '@/app/services/apiService';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, ImageIcon, RefreshCw, FileText, Globe, Linkedin, X } from 'lucide-react';
+import { Plus, Edit, Trash2, ImageIcon, RefreshCw, FileText, Globe, Linkedin, X, ChevronDown } from 'lucide-react';
 import axios from 'axios';
+
+const POST_TYPE_OPTIONS: { value: 'linkedin' | 'crossBorder'; label: string }[] = [
+  { value: 'linkedin', label: 'LinkedIn Post' },
+  { value: 'crossBorder', label: 'Cross-Border Post' },
+];
+
+function PostTypeSelect({
+  value,
+  onChange,
+}: {
+  value: 'linkedin' | 'crossBorder';
+  onChange: (value: 'linkedin' | 'crossBorder') => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const label = POST_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? 'Select type...';
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-md border border-white/20 bg-[rgba(45,20,30,0.85)] text-white text-left"
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown className="w-4 h-4 text-white ml-2 flex-shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 mt-1 rounded-md border border-white/20 bg-[#2d141e] text-sm text-white shadow-lg z-50">
+          {POST_TYPE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 flex items-center gap-2 ${
+                value === opt.value ? 'bg-[#5b1b2e] text-white' : 'hover:bg-[#3d1628] text-white'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Post {
   id: string;
@@ -233,14 +293,10 @@ export function PostsPage() {
             <div className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label>Post Type</Label>
-                <select
+                <PostTypeSelect
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full px-3 py-2 rounded-md bg-white/10 border border-white/20 text-white"
-                >
-                  <option value="linkedin">LinkedIn Post</option>
-                  <option value="crossBorder">Cross-Border Post</option>
-                </select>
+                  onChange={(type) => setFormData({ ...formData, type })}
+                />
               </div>
 
               <div className="space-y-2">
@@ -275,7 +331,7 @@ export function PostsPage() {
               </div>
 
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={handleDialogClose} className="border-white/20">
+                <Button variant="outline" onClick={handleDialogClose} className="border-white/20 bg-white/5 text-white hover:bg-white/10">
                   Cancel
                 </Button>
                 <Button onClick={handleSubmit} className="bg-pink-600 hover:bg-pink-700">

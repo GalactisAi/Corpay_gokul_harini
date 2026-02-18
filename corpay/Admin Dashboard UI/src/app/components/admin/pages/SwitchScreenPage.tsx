@@ -3,14 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
+import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
 import { FileUpload } from '../FileUpload';
 import { toast } from 'sonner';
-import { Presentation } from 'lucide-react';
+import { Presentation, FileText, BarChart3 } from 'lucide-react';
 import axios from 'axios';
 
+type SourceType = 'pdf' | 'powerbi';
+
 export function SwitchScreenPage() {
+  const [sourceType, setSourceType] = useState<SourceType>('pdf');
   const [pptFile, setPptFile] = useState<File | null>(null);
   const [uploadedPptUrl, setUploadedPptUrl] = useState<string | null>(null);
+  const [embedUrl, setEmbedUrl] = useState<string>('');
   const [isUploadingPpt, setIsUploadingPpt] = useState(false);
   const [isSlideshowActive, setIsSlideshowActive] = useState(false);
   const [slideIntervalSeconds, setSlideIntervalSeconds] = useState<number>(5);
@@ -84,7 +89,75 @@ export function SwitchScreenPage() {
     }
   };
 
+  const setSlideshowUrl = async (url: string): Promise<boolean> => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/admin/slideshow/set-url-dev`,
+        { embed_url: url },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+      );
+      return true;
+    } catch (devError: any) {
+      if (devError.response?.status === 401 || devError.response?.status === 403) {
+        try {
+          await axios.post(
+            `${API_BASE_URL}/api/admin/slideshow/set-url`,
+            { embed_url: url },
+            { headers, timeout: 10000 }
+          );
+          return true;
+        } catch {
+          toast.error('Authentication required. Please log in.');
+          return false;
+        }
+      }
+      throw devError;
+    }
+  };
+
   const handleStartSlideshow = async () => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    if (sourceType === 'powerbi') {
+      const url = embedUrl.trim();
+      if (!url) {
+        toast.error('Please enter a Power BI Embed URL');
+        return;
+      }
+      try {
+        await setSlideshowUrl(url);
+        const intervalSeconds = Math.max(1, Math.min(300, slideIntervalSeconds)) || 5;
+        try {
+          await axios.post(
+            `${API_BASE_URL}/api/admin/slideshow/start-dev`,
+            { interval_seconds: intervalSeconds },
+            { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+          );
+        } catch (devErr: any) {
+          if (devErr.response?.status === 401 || devErr.response?.status === 403) {
+            await axios.post(
+              `${API_BASE_URL}/api/admin/slideshow/start`,
+              { interval_seconds: intervalSeconds },
+              { headers, timeout: 10000 }
+            );
+          } else throw devErr;
+        }
+        setIsSlideshowActive(true);
+        toast.success('Switched main screen to slideshow');
+      } catch (error: any) {
+        console.error('Error starting slideshow:', error);
+        toast.error(error.response?.data?.detail || `Failed to start slideshow: ${error.message || 'Unknown error'}`);
+      }
+      return;
+    }
+
     if (!pptFile && !uploadedPptUrl) {
       toast.error('Please select a presentation file first');
       return;
@@ -105,20 +178,8 @@ export function SwitchScreenPage() {
       return;
     }
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const intervalSeconds = Math.max(1, Math.min(300, slideIntervalSeconds)) || 5;
-
-      // Try dev endpoint first (no auth)
       let response;
       try {
         response = await axios.post(
@@ -128,16 +189,11 @@ export function SwitchScreenPage() {
         );
       } catch (devError: any) {
         if (devError.response?.status === 401 || devError.response?.status === 403) {
-          try {
-            response = await axios.post(
-              `${API_BASE_URL}/api/admin/slideshow/start`,
-              { interval_seconds: intervalSeconds },
-              { headers, timeout: 10000 }
-            );
-          } catch (authError: any) {
-            toast.error('Authentication required. Please log in.');
-            return;
-          }
+          response = await axios.post(
+            `${API_BASE_URL}/api/admin/slideshow/start`,
+            { interval_seconds: intervalSeconds },
+            { headers, timeout: 10000 }
+          );
         } else {
           throw devError;
         }
@@ -217,48 +273,88 @@ export function SwitchScreenPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <FileUpload
-            selectedFile={pptFile}
-            onFileSelect={handlePptFileSelect}
-            onClear={() => {
-              setPptFile(null);
-              setUploadedPptUrl(null);
-            }}
-            label="Select PDF File"
-            accept={{
-              'application/pdf': ['.pdf'],
-            }}
-          />
-          {isUploadingPpt && (
-            <p className="text-sm text-gray-400">Uploading file...</p>
-          )}
-          {uploadedPptUrl && (
-            <p className="text-sm text-green-400">✓ File uploaded successfully</p>
-          )}
+          <Tabs value={sourceType} onValueChange={(v) => setSourceType(v as SourceType)} className="w-full">
+            <TabsList className="bg-white/10 text-white">
+              <TabsTrigger value="pdf" className="text-white data-[state=active]:bg-pink-600 data-[state=active]:text-white">
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </TabsTrigger>
+              <TabsTrigger value="powerbi" className="text-white data-[state=active]:bg-pink-600 data-[state=active]:text-white">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Power BI
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="slideInterval" className="text-white">
-              Slide interval (seconds)
-            </Label>
-            <Input
-              id="slideInterval"
-              type="number"
-              min={1}
-              max={300}
-              value={slideIntervalSeconds}
-              onChange={(e) => setSlideIntervalSeconds(Math.max(1, Math.min(300, Number(e.target.value) || 5)))}
-              className="bg-white/10 border-white/20 text-white max-w-[120px]"
-            />
-            <p className="text-xs text-gray-400">How many seconds each slide is shown before moving to the next (1–300).</p>
-          </div>
+            {sourceType === 'pdf' && (
+              <div className="mt-4 space-y-2">
+                <FileUpload
+                  selectedFile={pptFile}
+                  onFileSelect={handlePptFileSelect}
+                  onClear={() => {
+                    setPptFile(null);
+                    setUploadedPptUrl(null);
+                  }}
+                  label="Select PDF File"
+                  accept={{
+                    'application/pdf': ['.pdf'],
+                  }}
+                />
+                {isUploadingPpt && (
+                  <p className="text-sm text-gray-400">Uploading file...</p>
+                )}
+                {uploadedPptUrl && (
+                  <p className="text-sm text-green-400">✓ File uploaded successfully</p>
+                )}
+              </div>
+            )}
+
+            {sourceType === 'powerbi' && (
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="embedUrl" className="text-white">
+                  Embed URL
+                </Label>
+                <Input
+                  id="embedUrl"
+                  type="url"
+                  placeholder="https://app.powerbi.com/..."
+                  value={embedUrl}
+                  onChange={(e) => setEmbedUrl(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white"
+                />
+                <p className="text-xs text-gray-400">Paste the Power BI embed URL to display the report in full screen.</p>
+              </div>
+            )}
+          </Tabs>
+
+          {sourceType === 'pdf' && (
+            <div className="space-y-2">
+              <Label htmlFor="slideInterval" className="text-white">
+                Slide interval (seconds)
+              </Label>
+              <Input
+                id="slideInterval"
+                type="number"
+                min={1}
+                max={300}
+                value={slideIntervalSeconds}
+                onChange={(e) => setSlideIntervalSeconds(Math.max(1, Math.min(300, Number(e.target.value) || 5)))}
+                className="bg-white/10 border-white/20 text-white max-w-[120px]"
+              />
+              <p className="text-xs text-gray-400">How many seconds each slide is shown before moving to the next (1–300).</p>
+            </div>
+          )}
 
           <div className="bg-white/5 border border-white/10 rounded-lg p-4">
             <h4 className="text-white mb-2">Supported Formats:</h4>
             <ul className="text-sm text-gray-400 space-y-1">
-              <li>• PDF (.pdf) - No extra software needed</li>
+              {sourceType === 'pdf' ? (
+                <li>• PDF (.pdf) - No extra software needed</li>
+              ) : (
+                <li>• URL - Enter a valid Power BI Embed link</li>
+              )}
             </ul>
             <p className="text-sm text-gray-400 mt-2">
-              Click "Switch to Slideshow" to replace the main dashboard with the presentation, and "Switch back to Dashboard"
+              Click &quot;Switch to Present&quot; to replace the main dashboard with the presentation, and &quot;Switch back to Dashboard&quot;
               to return to the normal view.
             </p>
           </div>
@@ -266,10 +362,14 @@ export function SwitchScreenPage() {
           <div className="flex gap-4 mt-4">
             <Button
               onClick={handleStartSlideshow}
-              disabled={(!pptFile && !uploadedPptUrl) || isUploadingPpt}
+              disabled={
+                (sourceType === 'pdf' && !pptFile && !uploadedPptUrl) ||
+                (sourceType === 'powerbi' && !embedUrl.trim()) ||
+                isUploadingPpt
+              }
               className="flex-1 bg-pink-600 hover:bg-pink-700 text-white disabled:opacity-50"
             >
-              {isUploadingPpt ? 'Uploading...' : 'Switch to Slideshow'}
+              {isUploadingPpt ? 'Uploading...' : 'Switch to Present'}
             </Button>
             <Button
               onClick={handleStopSlideshow}

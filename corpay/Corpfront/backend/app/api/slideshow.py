@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
+from urllib.parse import urlparse
 from app.database import get_db
 from app.utils.auth import get_current_admin_user
 from app.utils.file_handler import save_uploaded_file, get_file_size_mb
@@ -75,6 +76,8 @@ def _find_libreoffice() -> str:
 
 class SlideshowState(BaseModel):
     is_active: bool
+    type: Literal["file", "url"] = "file"
+    source: Optional[str] = None
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     started_at: Optional[datetime] = None
@@ -85,9 +88,23 @@ class SlideshowStartBody(BaseModel):
     interval_seconds: Optional[int] = 5
 
 
+class SlideshowSetUrlBody(BaseModel):
+    embed_url: str
+
+
+def _is_valid_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url.strip())
+        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+    except Exception:
+        return False
+
+
 # In-memory storage for slideshow state (can be moved to database later)
 _slideshow_state = {
     "is_active": False,
+    "type": "file",
+    "source": None,
     "file_url": None,
     "file_name": None,
     "started_at": None,
@@ -129,6 +146,8 @@ async def upload_ppt_file_dev(
     file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
     # Update slideshow state with file info (but don't activate yet)
+    _slideshow_state["type"] = "file"
+    _slideshow_state["source"] = file_url
     _slideshow_state["file_url"] = file_url
     _slideshow_state["file_name"] = file.filename
     
@@ -175,6 +194,8 @@ async def upload_ppt_file(
     file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
     # Update slideshow state with file info (but don't activate yet)
+    _slideshow_state["type"] = "file"
+    _slideshow_state["source"] = file_url
     _slideshow_state["file_url"] = file_url
     _slideshow_state["file_name"] = file.filename
     
@@ -186,14 +207,60 @@ async def upload_ppt_file(
     }
 
 
+@router.post("/admin/slideshow/set-url-dev")
+async def set_slideshow_url_dev(
+    body: SlideshowSetUrlBody,
+    db: Session = Depends(get_db)
+):
+    """Set Power BI (or other) embed URL for slideshow (development mode - no auth required)"""
+    url = (body.embed_url or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="embed_url is required")
+    if not _is_valid_url(url):
+        raise HTTPException(status_code=400, detail="Invalid URL. Must be a valid http or https URL.")
+    _slideshow_state["type"] = "url"
+    _slideshow_state["source"] = url
+    _slideshow_state["file_url"] = None
+    _slideshow_state["file_name"] = None
+    return {
+        "message": "Embed URL set successfully",
+        "source": url,
+        "type": "url"
+    }
+
+
+@router.post("/admin/slideshow/set-url")
+async def set_slideshow_url(
+    body: SlideshowSetUrlBody,
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Set Power BI (or other) embed URL for slideshow"""
+    url = (body.embed_url or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="embed_url is required")
+    if not _is_valid_url(url):
+        raise HTTPException(status_code=400, detail="Invalid URL. Must be a valid http or https URL.")
+    _slideshow_state["type"] = "url"
+    _slideshow_state["source"] = url
+    _slideshow_state["file_url"] = None
+    _slideshow_state["file_name"] = None
+    return {
+        "message": "Embed URL set successfully",
+        "source": url,
+        "type": "url"
+    }
+
+
 @router.post("/admin/slideshow/start-dev")
 async def start_slideshow_dev(
     body: Optional[SlideshowStartBody] = Body(default=None),
     db: Session = Depends(get_db)
 ):
     """Start the slideshow on frontend dashboard (development mode - no auth required)"""
-    if not _slideshow_state["file_url"]:
-        raise HTTPException(status_code=400, detail="No presentation file uploaded. Please upload a file first.")
+    source = _slideshow_state.get("source") or _slideshow_state.get("file_url")
+    if not source:
+        raise HTTPException(status_code=400, detail="No presentation set. Please upload a file or set an embed URL first.")
     
     if body and body.interval_seconds is not None:
         _slideshow_state["interval_seconds"] = max(1, min(300, body.interval_seconds))  # clamp 1–300
@@ -203,6 +270,8 @@ async def start_slideshow_dev(
     return {
         "message": "Slideshow started",
         "is_active": True,
+        "type": _slideshow_state.get("type", "file"),
+        "source": source,
         "file_url": _slideshow_state["file_url"],
         "file_name": _slideshow_state["file_name"],
         "interval_seconds": _slideshow_state["interval_seconds"]
@@ -216,8 +285,9 @@ async def start_slideshow(
     db: Session = Depends(get_db)
 ):
     """Start the slideshow on frontend dashboard"""
-    if not _slideshow_state["file_url"]:
-        raise HTTPException(status_code=400, detail="No presentation file uploaded. Please upload a file first.")
+    source = _slideshow_state.get("source") or _slideshow_state.get("file_url")
+    if not source:
+        raise HTTPException(status_code=400, detail="No presentation set. Please upload a file or set an embed URL first.")
     
     if body and body.interval_seconds is not None:
         _slideshow_state["interval_seconds"] = max(1, min(300, body.interval_seconds))
@@ -227,6 +297,8 @@ async def start_slideshow(
     return {
         "message": "Slideshow started",
         "is_active": True,
+        "type": _slideshow_state.get("type", "file"),
+        "source": source,
         "file_url": _slideshow_state["file_url"],
         "file_name": _slideshow_state["file_name"],
         "interval_seconds": _slideshow_state["interval_seconds"]
@@ -264,9 +336,13 @@ async def stop_slideshow(
 
 @router.get("/dashboard/slideshow", response_model=SlideshowState)
 async def get_slideshow_state(db: Session = Depends(get_db)):
-    """Get current slideshow state (public endpoint for frontend dashboard)"""
+    """Get current slideshow state (public endpoint for frontend dashboard). Returns type ('file'|'url'), source (path or link), interval_seconds."""
+    slideshow_type = _slideshow_state.get("type", "file")
+    source = _slideshow_state.get("source") or _slideshow_state.get("file_url")
     return SlideshowState(
         is_active=_slideshow_state["is_active"],
+        type=slideshow_type,
+        source=source,
         file_url=_slideshow_state["file_url"],
         file_name=_slideshow_state["file_name"],
         started_at=_slideshow_state["started_at"],

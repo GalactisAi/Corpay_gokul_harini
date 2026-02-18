@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timezone, date
+from urllib.parse import urljoin
+import os
 from app.database import get_db
 from app.models.revenue import Revenue, RevenueTrend, RevenueProportion, SharePrice
 from app.models.posts import SocialPost
@@ -25,6 +27,19 @@ from app.services.newsroom_scraper import (
 from app.utils.cache import get, set
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+
+_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+
+
+def _normalize_post_image_url(url: Optional[str]) -> Optional[str]:
+    """Ensure post image_url is absolute so frontend can load LinkedIn and backend images."""
+    if not url or not (url := url.strip()):
+        return url
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    if url.startswith("/uploads/"):
+        return urljoin(_API_BASE_URL.rstrip("/"), url)
+    return urljoin("https://www.linkedin.com", url)
 
 
 @router.get("/revenue", response_model=RevenueResponse)
@@ -194,14 +209,22 @@ async def get_corpay_posts(limit: int = 10, db: Session = Depends(get_db)):
             SocialPost.is_active == 1
         ).order_by(SocialPost.created_at.desc()).limit(limit).all()
         
-        # If we have posts in DB (manual or API), return them
+        # If we have posts in DB (manual or API), return them with normalized image_url
         if db_posts:
-            return db_posts
+            return [
+                SocialPostResponse.model_validate(p).model_copy(
+                    update={"image_url": _normalize_post_image_url(getattr(p, "image_url", None))}
+                )
+                for p in db_posts
+            ]
         
         # If no posts in DB, try to fetch from API as fallback
         try:
             api_posts = await LinkedInService.get_corpay_posts(limit)
-            return [SocialPostResponse(**post) for post in api_posts]
+            return [
+                SocialPostResponse(**{**post, "image_url": _normalize_post_image_url(post.get("image_url"))})
+                for post in api_posts
+            ]
         except Exception:
             # Return empty list if API also fails
             return []
@@ -225,14 +248,22 @@ async def get_cross_border_posts(limit: int = 10, db: Session = Depends(get_db))
             SocialPost.is_active == 1
         ).order_by(SocialPost.created_at.desc()).limit(limit).all()
         
-        # If we have posts in DB (manual or API), return them
+        # If we have posts in DB (manual or API), return them with normalized image_url
         if db_posts:
-            return db_posts
+            return [
+                SocialPostResponse.model_validate(p).model_copy(
+                    update={"image_url": _normalize_post_image_url(getattr(p, "image_url", None))}
+                )
+                for p in db_posts
+            ]
         
         # If no posts in DB, try to fetch from API as fallback
         try:
             api_posts = await LinkedInService.get_cross_border_posts(limit)
-            return [SocialPostResponse(**post) for post in api_posts]
+            return [
+                SocialPostResponse(**{**post, "image_url": _normalize_post_image_url(post.get("image_url"))})
+                for post in api_posts
+            ]
         except Exception:
             # Return empty list if API also fails
             return []
@@ -329,22 +360,48 @@ async def get_system_performance(db: Session = Depends(get_db)):
         )
 
 
+def _newsroom_agent_log(location: str, message: str, data: dict, hypothesis_id: str = ""):
+    # region agent log
+    try:
+        import json
+        import os
+        import time as _t
+        _path = r"d:\Galatics Projects\Corpay\Corpupdated\.cursor\debug.log"
+        _dir = os.path.dirname(_path)
+        if _dir:
+            os.makedirs(_dir, exist_ok=True)
+        payload = {"id": f"log_{int(_t.time()*1000)}", "timestamp": int(_t.time()*1000), "location": location, "message": message, "data": data}
+        if hypothesis_id:
+            payload["hypothesisId"] = hypothesis_id
+        with open(_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+    # endregion agent log
+
+
 @router.get("/newsroom", response_model=List[NewsroomItemResponse])
-async def get_newsroom_items(limit: int = 5) -> List[NewsroomItemResponse]:
+async def get_newsroom_items(limit: int = 12) -> List[NewsroomItemResponse]:
     """
     Get latest items from the public Corpay corporate newsroom.
     
-    This simply proxies the public website [`https://www.corpay.com/corporate-newsroom?limit=10&years=&categories=&search=`]
-    and returns a lightweight list of articles for display in the Corpfront UI.
-    Cached for 5 minutes to avoid slow external fetches on every request.
+    Fetches with depth 20 from source (so Feb 11 etc. behind Featured items are included),
+    then returns up to `limit` (default 12). Cached briefly for verification.
     """
     cache_key = f"newsroom_{limit}"
     cached = get(cache_key)
+    # region agent log
+    if cached is not None:
+        _newsroom_agent_log("dashboard.py:get_newsroom_items", "Cache HIT", {"cache_key": cache_key, "cached_count": len(cached)}, "H4")
+    else:
+        _newsroom_agent_log("dashboard.py:get_newsroom_items", "Cache MISS, calling scraper", {"cache_key": cache_key}, "H4")
+    # endregion agent log
     if cached is not None:
         return cached
-    items = await fetch_corpay_newsroom(limit=limit)
-    result = [NewsroomItemResponse(**item) for item in items]
-    set(cache_key, result, ttl_seconds=300)
+    # Fetch more from source (look-ahead) so we don't miss items behind "Featured"
+    items = await fetch_corpay_newsroom(limit=20)
+    result = [NewsroomItemResponse(**item) for item in items[:limit]]
+    set(cache_key, result, ttl_seconds=10)
     return result
 
 

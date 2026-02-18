@@ -15,6 +15,57 @@ interface Employee {
   milestone_date: string
 }
 
+const MILESTONE_OPTIONS = [
+  { value: 'anniversary', label: '📅 Work Anniversary' },
+  { value: 'birthday', label: '🎂 Birthday' },
+  { value: 'promotion', label: '📈 Promotion' },
+  { value: 'new_hire', label: '✨ New Hire' },
+]
+
+function MilestoneSelect({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const selected = MILESTONE_OPTIONS.find((o) => o.value === value) || MILESTONE_OPTIONS[0]
+
+  return (
+    <div className="relative employee-milestone-modal">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="employee-milestone-select w-full flex items-center justify-between px-4 py-2 border rounded-lg"
+      >
+        <span className="truncate">{selected.label}</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 mt-1 rounded-lg shadow-lg z-50 bg-[#2d141e] border border-[rgba(152,18,57,0.7)] max-h-56 overflow-y-auto">
+          {MILESTONE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value)
+                setOpen(false)
+              }}
+              className={`w-full text-left px-4 py-2 text-sm ${
+                option.value === value
+                  ? 'bg-[#5b1b2e] text-white'
+                  : 'text-[#e0e0e0] hover:bg-[#3d1628]'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EmployeesManagement() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -115,7 +166,7 @@ export default function EmployeesManagement() {
         </div>
 
         {showForm && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6 employee-milestone-modal">
             <h2 className="text-xl font-semibold mb-4">Add Milestone</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -140,16 +191,10 @@ export default function EmployeesManagement() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Milestone Type</label>
-                <select
+                <MilestoneSelect
                   value={formData.milestone_type}
-                  onChange={(e) => setFormData({ ...formData, milestone_type: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="anniversary">📅 Work Anniversary</option>
-                  <option value="birthday">🎂 Birthday</option>
-                  <option value="promotion">📈 Promotion</option>
-                  <option value="new_hire">✨ New Hire</option>
-                </select>
+                  onChange={(milestone_type) => setFormData({ ...formData, milestone_type })}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>

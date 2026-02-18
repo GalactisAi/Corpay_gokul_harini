@@ -4,6 +4,7 @@ Extracts image and caption from LinkedIn post URLs using Open Graph tags
 """
 import httpx
 from typing import Dict, Any, Optional
+from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 import re
 import logging
@@ -105,9 +106,17 @@ class LinkedInURLExtractor:
                     twitter_image = soup.find('meta', attrs={'name': 'twitter:image'})
                     if twitter_image:
                         og_image = twitter_image.get('content')
+                # Ensure absolute URL so frontend can load images (prefix relative paths)
+                image_url = None
+                if og_image:
+                    og_image = (og_image or "").strip()
+                    if og_image.startswith("http://") or og_image.startswith("https://"):
+                        image_url = og_image
+                    else:
+                        image_url = urljoin("https://www.linkedin.com", og_image)
                 
                 return {
-                    'image_url': og_image,
+                    'image_url': image_url,
                     'content': content or f"LinkedIn Post: {post_url}",
                     'title': og_title or "LinkedIn Post",
                     'description': og_description or ""

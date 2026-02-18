@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { FileUpload } from '../FileUpload';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Upload, ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Upload, ImageIcon, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 
 interface Employee {
@@ -26,6 +26,54 @@ const MILESTONE_EMOJI: Record<string, string> = {
   'Achievement': '🏆',
   'New Hire': '✨',
 };
+
+function MilestoneSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const label =
+    value && MILESTONE_EMOJI[value]
+      ? `${MILESTONE_EMOJI[value]} ${value}`
+      : 'Select milestone...';
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="employee-milestone-select w-full flex items-center justify-between px-3 py-2 rounded-md border border-white/20 bg-[rgba(45,20,30,0.85)] text-white"
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown className="w-4 h-4 text-white ml-2 flex-shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 mt-1 rounded-md border border-white/20 bg-[#2d141e] text-sm text-[#e0e0e0] shadow-lg z-50 max-h-56 overflow-y-auto">
+          {Object.entries(MILESTONE_EMOJI).map(([milestoneLabel, emoji]) => (
+            <button
+              key={milestoneLabel}
+              type="button"
+              onClick={() => {
+                onChange(milestoneLabel);
+                setOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 flex items-center gap-2 ${
+                value === milestoneLabel ? 'bg-[#5b1b2e] text-white' : 'hover:bg-[#3d1628]'
+              }`}
+            >
+              <span>{emoji}</span>
+              <span className="truncate">{milestoneLabel}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -71,6 +119,7 @@ export function EmployeesPage() {
         name: emp.name,
         milestone: emp.milestone_type === 'anniversary' ? 'Work Anniversary' :
                    emp.milestone_type === 'promotion' ? 'Promotion' :
+                   emp.milestone_type === 'achievement' ? 'Achievement' :
                    emp.milestone_type === 'birthday' ? 'Birthday' :
                    emp.milestone_type === 'new_hire' ? 'New Hire' : emp.milestone_type,
         description: emp.description,
@@ -97,7 +146,7 @@ export function EmployeesPage() {
       'Work Anniversary': 'anniversary',
       'Promotion': 'promotion',
       'Birthday': 'birthday',
-      'Achievement': 'promotion',
+      'Achievement': 'achievement',
       'New Hire': 'new_hire'
     };
 
@@ -380,17 +429,10 @@ export function EmployeesPage() {
 
               <div className="space-y-2">
                 <Label>Milestone Type</Label>
-                <select
+                <MilestoneSelect
                   value={formData.milestone}
-                  onChange={(e) => setFormData({ ...formData, milestone: e.target.value })}
-                  className="w-full px-3 py-2 rounded-md bg-white/10 border border-white/20 text-white"
-                >
-                  <option value="">Select milestone...</option>
-                  <option value="Work Anniversary">📅 Work Anniversary</option>
-                  <option value="Promotion">📈 Promotion</option>
-                  <option value="Birthday">🎂 Birthday</option>
-                  <option value="Achievement">🏆 Achievement</option>
-                </select>
+                  onChange={(milestone) => setFormData({ ...formData, milestone })}
+                />
               </div>
 
               <div className="space-y-2">
@@ -421,6 +463,7 @@ export function EmployeesPage() {
                   'image/*': ['.png', '.jpg', '.jpeg', '.gif']
                 }}
                 label="Employee Photo"
+                theme="dark"
               />
 
               <div className="flex gap-2 justify-end">

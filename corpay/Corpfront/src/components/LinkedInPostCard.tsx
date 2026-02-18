@@ -1,4 +1,4 @@
-import { Linkedin, ThumbsUp, MessageCircle, Share2 } from 'lucide-react';
+import { Linkedin } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface LinkedInPostCardProps {
@@ -46,25 +46,6 @@ export function LinkedInPostCard({ author, timeAgo, content, image, likes = 0, c
           />
         </div>
       )}
-      
-      {/* Engagement Footer */}
-      <div className="px-4 py-3 border-t border-gray-100">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-gray-600 hover:text-[#981239] transition-colors cursor-pointer">
-              <ThumbsUp className="w-3.5 h-3.5" />
-              <span style={{ fontWeight: 500 }}>{likes}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-gray-600 hover:text-[#981239] transition-colors cursor-pointer">
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span style={{ fontWeight: 500 }}>{comments}</span>
-            </div>
-          </div>
-          <div className="text-gray-600 hover:text-[#981239] transition-colors cursor-pointer">
-            <Share2 className="w-3.5 h-3.5" />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

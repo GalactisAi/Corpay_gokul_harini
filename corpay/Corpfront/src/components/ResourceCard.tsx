@@ -4,14 +4,15 @@ interface ResourceCardProps {
   title: string;
   description: string;
   type: 'case-study' | 'whitepaper';
+  url?: string;
 }
 
-export function ResourceCard({ title, description, type }: ResourceCardProps) {
+export function ResourceCard({ title, description, type, url }: ResourceCardProps) {
   const Icon = type === 'case-study' ? FileText : BookOpen;
   const bgColor = type === 'case-study' ? '#3D1628' : '#981239';
-  
-  return (
-    <div className="flex items-start gap-3 p-3 bg-gray-50/60 rounded-lg cursor-pointer hover:bg-gray-100/80 transition-colors duration-150">
+
+  const content = (
+    <>
       <div className="p-2 rounded shrink-0" style={{ backgroundColor: bgColor + '20' }}>
         <Icon className="w-4 h-4" style={{ color: bgColor }} />
       </div>
@@ -21,6 +22,28 @@ export function ResourceCard({ title, description, type }: ResourceCardProps) {
           <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: '#6b7280' }}>{description}</p>
         ) : null}
       </div>
+    </>
+  );
+
+  const className = "flex items-start gap-3 p-3 bg-gray-50/60 rounded-lg cursor-pointer hover:bg-gray-100/80 transition-colors duration-150";
+
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+        style={{ cursor: 'pointer', textDecoration: 'none' }}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <div className={className} style={{ cursor: 'pointer' }}>
+      {content}
     </div>
   );
 }

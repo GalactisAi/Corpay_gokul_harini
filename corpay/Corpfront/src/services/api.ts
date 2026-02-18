@@ -23,7 +23,7 @@ export const dashboardApi = {
   getEmployees: (limit = 20) => api.get('/dashboard/employees', { params: { limit } }),
   getPayments: () => api.get('/dashboard/payments'),
   getSystemPerformance: () => api.get('/dashboard/system-performance'),
-  getNewsroom: (limit = 5) => api.get('/dashboard/newsroom', { params: { limit } }),
+  getNewsroom: (limit = 12) => api.get('/dashboard/newsroom', { params: { limit } }),
   getResourcesNewsroom: (limit = 4) => api.get('/dashboard/resources-newsroom', { params: { limit } }),
   getCustomerStories: (limit = 12) => api.get('/dashboard/customer-stories', { params: { limit } }),
   getCardTitles: () => api.get(`/dashboard/card-titles?t=${Date.now()}`),
