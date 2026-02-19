@@ -263,12 +263,16 @@ async def get_cross_border_posts(limit: int = 10, db: Session = Depends(get_db))
 
 @router.get("/employees", response_model=List[EmployeeMilestoneResponse])
 async def get_employee_milestones(limit: int = 20, db: Session = Depends(get_db)):
-    """Get employee milestones (active only; treat NULL is_active as active)."""
+    """Get employee milestones for dashboard. Excludes only explicitly inactive (is_active=0)."""
     from sqlalchemy import or_
     try:
         milestones = (
             db.query(EmployeeMilestone)
-            .filter(or_(EmployeeMilestone.is_active == 1, EmployeeMilestone.is_active.is_(None)))
+            .filter(or_(
+                EmployeeMilestone.is_active == 1,
+                EmployeeMilestone.is_active.is_(None),
+                EmployeeMilestone.is_active != 0,
+            ))
             .order_by(EmployeeMilestone.milestone_date.desc())
             .limit(limit)
             .all()
@@ -277,7 +281,17 @@ async def get_employee_milestones(limit: int = 20, db: Session = Depends(get_db)
     except Exception as e:
         import logging
         logging.getLogger(__name__).exception("get_employee_milestones failed: %s", e)
-        return []
+        try:
+            milestones = (
+                db.query(EmployeeMilestone)
+                .order_by(EmployeeMilestone.milestone_date.desc())
+                .limit(limit)
+                .all()
+            )
+            return milestones
+        except Exception as e2:
+            logging.getLogger(__name__).exception("get_employee_milestones fallback failed: %s", e2)
+            return []
 
 
 @router.get("/payments", response_model=PaymentDataResponse)

@@ -525,8 +525,13 @@ export default function App() {
           setCrossBorderPostsList(transformedCrossBorder);
         }
         if (employeesRes.status === 'fulfilled') {
-          const raw = employeesRes.value.data;
-          const employeesData = Array.isArray(raw) ? raw : (raw && Array.isArray((raw as any).data) ? (raw as any).data : []);
+          const res = employeesRes.value;
+          const raw = res?.data;
+          const employeesData: any[] = Array.isArray(raw)
+            ? raw
+            : (raw && Array.isArray((raw as any).data)
+              ? (raw as any).data
+              : (raw && Array.isArray((raw as any).milestones) ? (raw as any).milestones : []));
           const MILESTONE_EMOJI: Record<string, string> = {
             anniversary: '📅',
             promotion: '📈',
@@ -534,34 +539,28 @@ export default function App() {
             new_hire: '✨',
             achievement: '🏆'
           };
-          // Transform API response to match component format
           const transformedMilestones = employeesData.map((emp: any) => {
-            // Construct full URL for avatar if path exists
             let avatarUrl = 'https://via.placeholder.com/100';
-            if (emp.avatar_path) {
-              // If it's already a full URL, use it; otherwise construct from backend
-              if (emp.avatar_path.startsWith('http://') || emp.avatar_path.startsWith('https://')) {
+            if (emp?.avatar_path) {
+              if (String(emp.avatar_path).startsWith('http://') || String(emp.avatar_path).startsWith('https://')) {
                 avatarUrl = emp.avatar_path;
               } else {
-                // Construct URL to backend uploads directory
                 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
-                avatarUrl = `${API_BASE_URL}/uploads/${emp.avatar_path}`;
+                avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${(emp.avatar_path as string).replace(/^\/+/, '')}`;
               }
             }
-            
             return {
-              name: emp.name || '',
-              description: emp.description || '',
+              name: emp?.name ?? '',
+              description: emp?.description ?? '',
               avatar: avatarUrl,
-              borderColor: emp.border_color || '#981239',
-              backgroundColor: emp.background_color || '#fef5f8',
-              emoji: MILESTONE_EMOJI[emp.milestone_type] || '🎉'
+              borderColor: emp?.border_color || '#981239',
+              backgroundColor: emp?.background_color || '#fef5f8',
+              emoji: MILESTONE_EMOJI[emp?.milestone_type] || '🎉'
             };
           });
           setMilestonesList(transformedMilestones);
         } else {
           console.warn('[Initial Load] Employees API failed:', employeesRes.reason);
-          // Don't use hardcoded data, keep empty array if API fails
           setMilestonesList([]);
         }
         if (paymentsRes.status === 'fulfilled') {
@@ -897,7 +896,9 @@ export default function App() {
         const employeesRes = await dashboardApi.getEmployees(20);
         if (employeesRes && employeesRes.data !== undefined) {
           const raw = employeesRes.data;
-          const employeesData = Array.isArray(raw) ? raw : (raw && Array.isArray((raw as any).data) ? (raw as any).data : []);
+          const employeesData: any[] = Array.isArray(raw)
+            ? raw
+            : (raw && Array.isArray((raw as any).data) ? (raw as any).data : (raw && Array.isArray((raw as any).milestones) ? (raw as any).milestones : []));
           const MILESTONE_EMOJI: Record<string, string> = {
             anniversary: '📅',
             promotion: '📈',
@@ -905,35 +906,29 @@ export default function App() {
             new_hire: '✨',
             achievement: '🏆'
           };
-          // Transform API response to match component format
           const transformedMilestones = employeesData.map((emp: any) => {
-            // Construct full URL for avatar if path exists
             let avatarUrl = 'https://via.placeholder.com/100';
-            if (emp.avatar_path) {
-              // If it's already a full URL, use it; otherwise construct from backend
-              if (emp.avatar_path.startsWith('http://') || emp.avatar_path.startsWith('https://')) {
+            if (emp?.avatar_path) {
+              if (String(emp.avatar_path).startsWith('http://') || String(emp.avatar_path).startsWith('https://')) {
                 avatarUrl = emp.avatar_path;
               } else {
-                // Construct URL to backend uploads directory
                 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
-                avatarUrl = `${API_BASE_URL}/uploads/${emp.avatar_path}`;
+                avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${String(emp.avatar_path).replace(/^\/+/, '')}`;
               }
             }
-            
             return {
-              name: emp.name || '',
-              description: emp.description || '',
+              name: emp?.name ?? '',
+              description: emp?.description ?? '',
               avatar: avatarUrl,
-              borderColor: emp.border_color || '#981239',
-              backgroundColor: emp.background_color || '#fef5f8',
-              emoji: MILESTONE_EMOJI[emp.milestone_type] || '🎉'
+              borderColor: emp?.border_color || '#981239',
+              backgroundColor: emp?.background_color || '#fef5f8',
+              emoji: MILESTONE_EMOJI[emp?.milestone_type] || '🎉'
             };
           });
           setMilestonesList(transformedMilestones);
         }
       } catch (error) {
         console.error('Error fetching employee milestones:', error);
-        // Don't use hardcoded data - keep empty if API fails
       }
     };
     

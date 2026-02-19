@@ -29,14 +29,14 @@ class EmployeeMilestoneResponse(BaseModel):
     id: int
     name: str
     description: str
-    avatar_path: Optional[str]
-    border_color: str
-    background_color: str
-    milestone_type: str
-    department: Optional[str]
-    milestone_date: datetime
-    created_at: datetime
-    
+    avatar_path: Optional[str] = None
+    border_color: str = "#981239"
+    background_color: str = "#fef5f8"
+    milestone_type: str = "achievement"
+    department: Optional[str] = None
+    milestone_date: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
     class Config:
         from_attributes = True
 
