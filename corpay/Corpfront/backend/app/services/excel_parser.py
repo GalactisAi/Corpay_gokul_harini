@@ -1,7 +1,19 @@
+import math
 import pandas as pd
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pathlib import Path
+
+
+def _safe_float(value: Any) -> Optional[float]:
+    """Convert to float; return None if NaN, Inf, or invalid."""
+    if value is None or (isinstance(value, float) and (math.isnan(value) or math.isinf(value))):
+        return None
+    try:
+        f = float(value)
+        return None if (math.isnan(f) or math.isinf(f)) else f
+    except (TypeError, ValueError):
+        return None
 
 
 class ExcelParser:
@@ -32,18 +44,26 @@ class ExcelParser:
                 # Flexible parsing - look for common column names
                 if 'Total Revenue' in df_total.columns or 'total_revenue' in df_total.columns:
                     col = 'Total Revenue' if 'Total Revenue' in df_total.columns else 'total_revenue'
-                    result["total_revenue"] = float(df_total[col].iloc[0])
+                    result["total_revenue"] = _safe_float(df_total[col].iloc[0])
                 elif len(df_total) > 0:
-                    # Try to find numeric value in first row
                     for col in df_total.columns:
                         if pd.api.types.is_numeric_dtype(df_total[col]):
-                            result["total_revenue"] = float(df_total[col].iloc[0])
+                            result["total_revenue"] = _safe_float(df_total[col].iloc[0])
                             break
                 
-                # Look for percentage change
                 if 'Percentage Change' in df_total.columns or 'percentage_change' in df_total.columns:
                     col = 'Percentage Change' if 'Percentage Change' in df_total.columns else 'percentage_change'
-                    result["percentage_change"] = float(df_total[col].iloc[0])
+                    result["percentage_change"] = _safe_float(df_total[col].iloc[0])
+            
+            # Ensure we never return numpy/pandas nan to API (DB NOT NULL constraint)
+            if result["total_revenue"] is not None:
+                result["total_revenue"] = float(result["total_revenue"])
+                if math.isnan(result["total_revenue"]) or math.isinf(result["total_revenue"]):
+                    result["total_revenue"] = None
+            if result["percentage_change"] is not None:
+                result["percentage_change"] = float(result["percentage_change"])
+                if math.isnan(result["percentage_change"]) or math.isinf(result["percentage_change"]):
+                    result["percentage_change"] = None
             
             # Parse revenue trends (second sheet or 'Trends' sheet)
             trends_sheet = None

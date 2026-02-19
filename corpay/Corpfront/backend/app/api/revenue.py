@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Any, List, Optional
 from datetime import datetime
+import math
+import os
 from app.database import get_db
 from app.models.revenue import Revenue, RevenueTrend, RevenueProportion, SharePrice
 from app.models.file_upload import FileUpload, FileType
@@ -14,6 +16,19 @@ from app.models.user import User
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/admin/revenue", tags=["admin-revenue"])
+
+
+def _valid_revenue_amount(value: Any) -> Optional[float]:
+    """Return a finite non-negative float for DB; None otherwise. Handles numpy/pandas nan."""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        if math.isnan(f) or math.isinf(f) or f < 0:
+            return None
+        return f
+    except (TypeError, ValueError):
+        return None
 
 
 def _get_config_value(db, key: str):
@@ -43,11 +58,14 @@ async def upload_revenue_file(
     # Save file
     file_path = save_uploaded_file(file, "revenue")
     file_size = get_file_size_mb(file_path)
+    api_base = os.getenv("API_BASE_URL", "http://localhost:8002")
+    storage_url = f"{api_base.rstrip('/')}/uploads/{file_path}"
     
-    # Record upload
+    # Record upload with storage_url for DB persistence
     file_upload = FileUpload(
         original_filename=file.filename,
         stored_path=file_path,
+        storage_url=storage_url,
         file_type=FileType.REVENUE,
         file_size=int(file_size * 1024 * 1024),
         uploaded_by=current_user.email
@@ -59,21 +77,24 @@ async def upload_revenue_file(
         parser = ExcelParser()
         data = parser.parse_revenue_file(f"uploads/{file_path}")
         
-        # Update revenue
-        if data.get("total_revenue"):
-            # Ensure we never write NULL into a non-nullable percentage_change column
+        # Update revenue only when total_amount is valid (never NaN/inf) to avoid IntegrityError
+        total_revenue = _valid_revenue_amount(data.get("total_revenue"))
+        if total_revenue is not None:
             pct_change = data.get("percentage_change")
-            if pct_change is None:
-                pct_change = 0.0
-
+            try:
+                pct_f = float(pct_change)
+                if math.isnan(pct_f) or math.isinf(pct_f):
+                    pct_f = 0.0
+            except (TypeError, ValueError):
+                pct_f = 0.0
             revenue = db.query(Revenue).order_by(Revenue.last_updated.desc()).first()
             if revenue:
-                revenue.total_amount = data["total_revenue"]
-                revenue.percentage_change = pct_change
+                revenue.total_amount = total_revenue
+                revenue.percentage_change = pct_f
             else:
                 revenue = Revenue(
-                    total_amount=data["total_revenue"],
-                    percentage_change=pct_change
+                    total_amount=total_revenue,
+                    percentage_change=pct_f
                 )
                 db.add(revenue)
         
@@ -150,11 +171,14 @@ async def upload_revenue_file_dev(
         # Save file
         file_path = save_uploaded_file(file, "revenue")
         file_size = get_file_size_mb(file_path)
+        api_base = os.getenv("API_BASE_URL", "http://localhost:8002")
+        storage_url = f"{api_base.rstrip('/')}/uploads/{file_path}"
 
-        # Record upload
+        # Record upload with storage_url for DB persistence
         file_upload = FileUpload(
             original_filename=file.filename,
             stored_path=file_path,
+            storage_url=storage_url,
             file_type=FileType.REVENUE,
             file_size=int(file_size * 1024 * 1024),
             uploaded_by="dev_user"
@@ -165,21 +189,24 @@ async def upload_revenue_file_dev(
         parser = ExcelParser()
         data = parser.parse_revenue_file(f"uploads/{file_path}")
 
-        # Update revenue
-        if data.get("total_revenue"):
-            # Ensure we never write NULL into a non-nullable percentage_change column
+        # Update revenue only when total_amount is valid (never NaN/inf) to avoid IntegrityError
+        total_revenue = _valid_revenue_amount(data.get("total_revenue"))
+        if total_revenue is not None:
             pct_change = data.get("percentage_change")
-            if pct_change is None:
-                pct_change = 0.0
-
+            try:
+                pct_f = float(pct_change)
+                if math.isnan(pct_f) or math.isinf(pct_f):
+                    pct_f = 0.0
+            except (TypeError, ValueError):
+                pct_f = 0.0
             revenue = db.query(Revenue).order_by(Revenue.last_updated.desc()).first()
             if revenue:
-                revenue.total_amount = data["total_revenue"]
-                revenue.percentage_change = pct_change
+                revenue.total_amount = total_revenue
+                revenue.percentage_change = pct_f
             else:
                 revenue = Revenue(
-                    total_amount=data["total_revenue"],
-                    percentage_change=pct_change
+                    total_amount=total_revenue,
+                    percentage_change=pct_f
                 )
                 db.add(revenue)
 
@@ -246,14 +273,18 @@ async def upload_revenue_file_dev(
 
 @router.get("/current-file-dev")
 async def get_current_revenue_file_dev(db: Session = Depends(get_db)):
-    """Get current revenue trend file (last uploaded Excel) - dev, no auth."""
+    """Get current revenue trend file from DB (ApiConfig or last FileUpload)."""
     file_id = _get_config_value(db, "revenue_trend_file_id")
     file_name = _get_config_value(db, "revenue_trend_file_name")
     file_path = _get_config_value(db, "revenue_trend_file_path")
-    if not file_id and not file_name:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="No revenue file uploaded yet")
-    return {"file_id": int(file_id) if file_id else None, "file_name": file_name or "", "file_path": file_path or ""}
+    if file_id or file_name:
+        return {"file_id": int(file_id) if file_id else None, "file_name": file_name or "", "file_path": file_path or ""}
+    # Fallback: last uploaded revenue file from FileUpload table
+    last_upload = db.query(FileUpload).filter(FileUpload.file_type == FileType.REVENUE).order_by(FileUpload.created_at.desc()).first()
+    if last_upload:
+        return {"file_id": last_upload.id, "file_name": last_upload.original_filename or "", "file_path": last_upload.stored_path or ""}
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="No revenue file uploaded yet")
 
 
 @router.get("/current-file")
@@ -261,14 +292,17 @@ async def get_current_revenue_file(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Get current revenue trend file (last uploaded Excel)."""
+    """Get current revenue trend file from DB (ApiConfig or last FileUpload)."""
     file_id = _get_config_value(db, "revenue_trend_file_id")
     file_name = _get_config_value(db, "revenue_trend_file_name")
     file_path = _get_config_value(db, "revenue_trend_file_path")
-    if not file_id and not file_name:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="No revenue file uploaded yet")
-    return {"file_id": int(file_id) if file_id else None, "file_name": file_name or "", "file_path": file_path or ""}
+    if file_id or file_name:
+        return {"file_id": int(file_id) if file_id else None, "file_name": file_name or "", "file_path": file_path or ""}
+    last_upload = db.query(FileUpload).filter(FileUpload.file_type == FileType.REVENUE).order_by(FileUpload.created_at.desc()).first()
+    if last_upload:
+        return {"file_id": last_upload.id, "file_name": last_upload.original_filename or "", "file_path": last_upload.stored_path or ""}
+    from fastapi import HTTPException
+    raise HTTPException(status_code=404, detail="No revenue file uploaded yet")
 
 
 @router.delete("/current-file-dev")

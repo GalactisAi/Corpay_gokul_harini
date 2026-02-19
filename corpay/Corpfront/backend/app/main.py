@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from contextlib import asynccontextmanager
 import asyncio
+import os
 from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.api import dashboard, auth, revenue, posts, employees, payments, system, config, slideshow
@@ -103,10 +104,18 @@ try:
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
-# CORS middleware
+# CORS middleware: allow Railway/frontend origins; allow_methods=["*"] for OPTIONS preflight (avoids 400)
+_origins = list(settings.cors_origins)
+_extra = (os.getenv("CORS_ORIGINS_EXTRA") or "").strip()
+if _extra:
+    _origins.extend(o.strip() for o in _extra.split(",") if o.strip())
+if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+    _railway_origin = f"https://{os.getenv('RAILWAY_PUBLIC_DOMAIN')}"
+    if _railway_origin not in _origins:
+        _origins.append(_railway_origin)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

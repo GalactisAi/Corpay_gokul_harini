@@ -130,7 +130,7 @@ def _set_config_value(db: Session, key: str, value: Optional[str]) -> None:
 
 
 def _load_slideshow_file_from_db(db: Session) -> None:
-    """Load persisted slideshow file/url from ApiConfig into _slideshow_state."""
+    """Load persisted slideshow file/url from ApiConfig or last FileUpload into _slideshow_state."""
     url = _get_config_value(db, "slideshow_file_url")
     name = _get_config_value(db, "slideshow_file_name")
     typ = _get_config_value(db, "slideshow_type") or "file"
@@ -145,7 +145,15 @@ def _load_slideshow_file_from_db(db: Session) -> None:
         _slideshow_state["source"] = embed
         _slideshow_state["file_url"] = None
         _slideshow_state["file_name"] = None
-    # else leave in-memory state as-is
+    else:
+        # Fallback: last slideshow file from FileUpload table
+        last_upload = db.query(FileUpload).filter(FileUpload.file_type == FileType.SLIDESHOW).order_by(FileUpload.created_at.desc()).first()
+        if last_upload and (last_upload.storage_url or last_upload.stored_path):
+            file_url = last_upload.storage_url or (f"{os.getenv('API_BASE_URL', 'http://localhost:8002').rstrip('/')}/uploads/{last_upload.stored_path}")
+            _slideshow_state["type"] = "file"
+            _slideshow_state["source"] = file_url
+            _slideshow_state["file_url"] = file_url
+            _slideshow_state["file_name"] = last_upload.original_filename or "slideshow"
 
 
 @router.post("/admin/slideshow/upload-dev")
@@ -160,26 +168,23 @@ async def upload_ppt_file_dev(
     # Save file
     file_path = save_uploaded_file(file, "slideshow")
     file_size = get_file_size_mb(file_path)
+    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
+    file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
-    # Record upload (optional - for tracking)
-    # Note: Using EMPLOYEE_DATA as placeholder since PPT files don't have a dedicated type
+    # Record upload with storage_url for DB persistence
     try:
         file_upload = FileUpload(
             original_filename=file.filename,
             stored_path=file_path,
-            file_type=FileType.EMPLOYEE_DATA,  # Placeholder type
+            storage_url=file_url,
+            file_type=FileType.SLIDESHOW,
             file_size=int(file_size * 1024 * 1024),
             uploaded_by="dev_user"
         )
         db.add(file_upload)
         db.commit()
     except Exception as e:
-        # Log but don't fail if file upload record fails
         print(f"Warning: Could not record file upload: {e}")
-    
-    # Construct file URL
-    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
-    file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
     # Update slideshow state with file info (but don't activate yet)
     _slideshow_state["type"] = "file"
@@ -213,26 +218,23 @@ async def upload_ppt_file(
     # Save file
     file_path = save_uploaded_file(file, "slideshow")
     file_size = get_file_size_mb(file_path)
+    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
+    file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
-    # Record upload (optional - for tracking)
-    # Note: Using EMPLOYEE_DATA as placeholder since PPT files don't have a dedicated type
+    # Record upload with storage_url for DB persistence
     try:
         file_upload = FileUpload(
             original_filename=file.filename,
             stored_path=file_path,
-            file_type=FileType.EMPLOYEE_DATA,  # Placeholder type
+            storage_url=file_url,
+            file_type=FileType.SLIDESHOW,
             file_size=int(file_size * 1024 * 1024),
             uploaded_by=current_user.email
         )
         db.add(file_upload)
         db.commit()
     except Exception as e:
-        # Log but don't fail if file upload record fails
         print(f"Warning: Could not record file upload: {e}")
-    
-    # Construct file URL
-    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
-    file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
     # Update slideshow state with file info (but don't activate yet)
     _slideshow_state["type"] = "file"
@@ -396,19 +398,33 @@ def _slideshow_file_url_to_relative_path(file_url: str) -> Optional[str]:
     return path.replace("\\", "/") if path else None
 
 
-@router.delete("/admin/slideshow/file-dev")
-async def delete_slideshow_file_dev(db: Session = Depends(get_db)):
-    """Remove persisted slideshow file (dev, no auth). Deletes from storage and DB. Call X button."""
+def _delete_slideshow_file_and_state(db: Session) -> None:
+    """Remove current slideshow file from disk and DB (config + FileUpload fallback). Idempotent."""
     file_url = _get_config_value(db, "slideshow_file_url")
     rel_path = _slideshow_file_url_to_relative_path(file_url or "")
     if rel_path:
         delete_file(rel_path)
+    else:
+        # File may have been loaded from FileUpload fallback; remove that record and file
+        last_upload = db.query(FileUpload).filter(FileUpload.file_type == FileType.SLIDESHOW).order_by(FileUpload.created_at.desc()).first()
+        if last_upload:
+            if last_upload.stored_path:
+                delete_file(last_upload.stored_path)
+            db.delete(last_upload)
+            db.commit()
     _slideshow_state["type"] = "file"
     _slideshow_state["source"] = None
     _slideshow_state["file_url"] = None
     _slideshow_state["file_name"] = None
     for key in SLIDESHOW_KEYS:
         _set_config_value(db, key, "")
+    return None
+
+
+@router.delete("/admin/slideshow/file-dev")
+async def delete_slideshow_file_dev(db: Session = Depends(get_db)):
+    """Remove persisted slideshow file (dev, no auth). Deletes from storage and DB. Call X button. Always returns 200."""
+    _delete_slideshow_file_and_state(db)
     return {"message": "Slideshow file removed. Upload a new file to replace."}
 
 
@@ -417,17 +433,8 @@ async def delete_slideshow_file(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Remove persisted slideshow file. Deletes from storage and DB. Call X button."""
-    file_url = _get_config_value(db, "slideshow_file_url")
-    rel_path = _slideshow_file_url_to_relative_path(file_url or "")
-    if rel_path:
-        delete_file(rel_path)
-    _slideshow_state["type"] = "file"
-    _slideshow_state["source"] = None
-    _slideshow_state["file_url"] = None
-    _slideshow_state["file_name"] = None
-    for key in SLIDESHOW_KEYS:
-        _set_config_value(db, key, "")
+    """Remove persisted slideshow file. Deletes from storage and DB. Call X button. Always returns 200."""
+    _delete_slideshow_file_and_state(db)
     return {"message": "Slideshow file removed. Upload a new file to replace."}
 
 

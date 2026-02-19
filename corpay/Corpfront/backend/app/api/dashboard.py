@@ -74,12 +74,12 @@ async def get_share_price(db: Session = Depends(get_db)):
         if share_price and share_price.api_source == "manual":
             return share_price
         
-        # If we have any entry less than 2 minutes old, use it (refresh more frequently for web scraping)
-        if share_price and _share_price_timestamp_seconds_ago(share_price.timestamp) < 120:
+        # If we have any entry less than 1 hour old, use it (avoids scraper timeout on every request)
+        if share_price and _share_price_timestamp_seconds_ago(share_price.timestamp) < 3600:
             return share_price
         
-        # If no data or data is older than 2 minutes, fetch from web scraping service
-        if not share_price or _share_price_timestamp_seconds_ago(share_price.timestamp) > 120:
+        # If no data or data is older than 1 hour, fetch from web scraping service
+        if not share_price or _share_price_timestamp_seconds_ago(share_price.timestamp) > 3600:
             api_data = await SharePriceService.get_share_price()
             new_share_price = SharePrice(
                 price=api_data["price"],

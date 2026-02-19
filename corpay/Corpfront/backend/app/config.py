@@ -40,8 +40,7 @@ class Settings(BaseSettings):
     microsoft_client_secret: str = ""
     oauth_redirect_uri: str = "http://localhost:8000/api/admin/auth/callback"
     
-    # CORS
-    # Note: include all dev ports you might use for Vite/React frontends.
+    # CORS: dev ports + production (Vercel, Railway). Add more via CORS_ORIGINS_EXTRA in .env (comma-separated).
     cors_origins: List[str] = [
         "http://localhost:3000",
         "http://localhost:3002",
@@ -52,6 +51,8 @@ class Settings(BaseSettings):
         "http://localhost:5177",
         "http://localhost:5178",
         "http://localhost:5179",
+        "https://corpayadmindashboard.vercel.app",
+        "https://www.corpayadmindashboard.vercel.app",
     ]
     
     # File Storage

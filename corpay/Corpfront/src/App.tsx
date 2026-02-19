@@ -499,7 +499,6 @@ export default function App() {
           setRevenueProportions(proportionsRes.value.data);
         }
         if (postsRes.status === 'fulfilled') {
-          // Transform API response to match component format (include post_url for click-through to LinkedIn)
           const postsData = postsRes.value.data || [];
           const transformedPosts = postsData.map((post: any) => ({
             author: post.author || 'Corpay',
@@ -510,10 +509,9 @@ export default function App() {
             comments: post.comments || 0,
             postUrl: post.post_url || undefined
           }));
-          setPosts(transformedPosts.length > 0 ? transformedPosts : linkedInPosts);
+          setPosts(transformedPosts);
         }
         if (crossBorderRes.status === 'fulfilled') {
-          // Transform API response to match component format (include post_url for click-through to LinkedIn)
           const crossBorderData = crossBorderRes.value.data || [];
           const transformedCrossBorder = crossBorderData.map((post: any) => ({
             author: post.author || 'Corpay Cross-Border',
@@ -524,7 +522,7 @@ export default function App() {
             comments: post.comments || 0,
             postUrl: post.post_url || undefined
           }));
-          setCrossBorderPostsList(transformedCrossBorder.length > 0 ? transformedCrossBorder : crossBorderPosts);
+          setCrossBorderPostsList(transformedCrossBorder);
         }
         if (employeesRes.status === 'fulfilled') {
           const raw = employeesRes.value.data;
@@ -1506,19 +1504,23 @@ export default function App() {
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none'
             }}>
-              {crossBorderPostsList.map((post, index) => (
-                <LinkedInPostCard 
-                  key={index}
-                  author={post.author}
-                  timeAgo={post.timeAgo}
-                  content={post.content}
-                  image={post.image}
-                  likes={post.likes || 0}
-                  comments={post.comments || 0}
-                  isCorpayBrand={true}
-                  postUrl={post.postUrl}
-                />
-              ))}
+              {crossBorderPostsList.length === 0 ? (
+                <p className="text-gray-500 text-sm py-6 text-center">Latest Corpay Cross-Border post will appear here once available</p>
+              ) : (
+                crossBorderPostsList.map((post, index) => (
+                  <LinkedInPostCard 
+                    key={index}
+                    author={post.author}
+                    timeAgo={post.timeAgo}
+                    content={post.content}
+                    image={post.image}
+                    likes={post.likes || 0}
+                    comments={post.comments || 0}
+                    isCorpayBrand={true}
+                    postUrl={post.postUrl}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -1529,18 +1531,22 @@ export default function App() {
               scrollbarWidth: 'none', 
               msOverflowStyle: 'none'
             }}> 
-              {posts.map((post, index) => ( 
-                <LinkedInPostCard 
-                  key={index} 
-                  author={post.author} 
-                  timeAgo={post.timeAgo} 
-                  content={post.content} 
-                  image={post.image}
-                  likes={post.likes || 0}
-                  comments={post.comments || 0}
-                  postUrl={post.postUrl}
-                /> 
-              ))} 
+              {posts.length === 0 ? (
+                <p className="text-gray-500 text-sm py-6 text-center">Latest Corpay post will appear here once available</p>
+              ) : (
+                posts.map((post, index) => ( 
+                  <LinkedInPostCard 
+                    key={index} 
+                    author={post.author} 
+                    timeAgo={post.timeAgo} 
+                    content={post.content} 
+                    image={post.image}
+                    likes={post.likes || 0}
+                    comments={post.comments || 0}
+                    postUrl={post.postUrl}
+                  /> 
+                ))
+              )}
             </div> 
           </div>
         </div>

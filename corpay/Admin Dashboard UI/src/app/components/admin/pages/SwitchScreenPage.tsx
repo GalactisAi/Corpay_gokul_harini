@@ -193,6 +193,13 @@ export function SwitchScreenPage() {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
             timeout: 8000,
           });
+        } else if (devErr.response?.status === 404) {
+          // Already removed or endpoint not found; clear UI so upload option shows again
+          setUploadedPptUrl(null);
+          setUploadedFileName(null);
+          setPptFile(null);
+          toast.success('File removed. You can upload a new file.');
+          return;
         } else throw devErr;
       }
       setUploadedPptUrl(null);
@@ -200,6 +207,14 @@ export function SwitchScreenPage() {
       setPptFile(null);
       toast.success('File removed. You can upload a new file.');
     } catch (e: any) {
+      // On 404 (e.g. proxy/route), still clear local state so the card goes away
+      if (e.response?.status === 404) {
+        setUploadedPptUrl(null);
+        setUploadedFileName(null);
+        setPptFile(null);
+        toast.success('File removed. You can upload a new file.');
+        return;
+      }
       toast.error(e.response?.data?.detail || 'Failed to remove file');
     }
   };
