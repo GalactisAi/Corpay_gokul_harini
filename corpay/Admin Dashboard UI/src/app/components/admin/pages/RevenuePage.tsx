@@ -1087,30 +1087,6 @@ export function RevenuePage() {
               </CardContent>
             </Card>
           )}
-
-          {/* Share Price Display */}
-          {sharePrice && (
-            <Card className="bg-white/10 border-white/20 min-w-[220px]">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <DollarSign className="w-4 h-4 text-pink-500" />
-                      <span className="text-xs text-gray-400">Corpay Share Price</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-2xl font-bold text-white">
-                        ${sharePrice.price.toFixed(2)}
-                      </span>
-                      <span className="text-xs text-green-400">
-                        ▲ {sharePrice.changePercent >= 0 ? '+' : ''}{sharePrice.changePercent.toFixed(2)}% vs last value
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 
@@ -1489,13 +1465,6 @@ export function RevenuePage() {
                 <p className="text-gray-400 text-sm">View revenue trends and monthly performance</p>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowTrendsDashboard(!showTrendsDashboard)}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/30"
-                >
-                  {showTrendsDashboard ? 'Hide Dashboard' : 'Show Power BI Dashboard'}
-                </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowTrendsDashboard(false)}

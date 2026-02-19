@@ -6,7 +6,6 @@ import { RevenuePage } from './components/admin/pages/RevenuePage';
 import { PostsPage } from './components/admin/pages/PostsPage';
 import { EmployeesPage } from './components/admin/pages/EmployeesPage';
 import { PaymentsPage } from './components/admin/pages/PaymentsPage';
-import { ApiConfigPage } from './components/admin/pages/ApiConfigPage';
 import { ChartsPage } from './components/admin/pages/ChartsPage';
 import { SwitchScreenPage } from './components/admin/pages/SwitchScreenPage';
 import { Toaster } from './components/ui/sonner';
@@ -57,7 +56,6 @@ export default function AdminApp() {
                     <Route path="posts" element={<PostsPage />} />
                     <Route path="employees" element={<EmployeesPage />} />
                     <Route path="payments" element={<PaymentsPage />} />
-                    <Route path="config" element={<ApiConfigPage />} />
                     <Route path="charts" element={<ChartsPage />} />
                     <Route path="switch-screen" element={<SwitchScreenPage />} />
                   </Routes>

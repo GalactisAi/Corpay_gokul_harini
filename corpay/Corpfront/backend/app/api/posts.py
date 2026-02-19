@@ -73,6 +73,17 @@ async def update_post(
     return db_post
 
 
+@router.delete("/{post_id}/dev")
+async def delete_post_dev(post_id: int, db: Session = Depends(get_db)):
+    """Delete a post (soft delete) - development mode, no auth"""
+    post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    post.is_active = 0
+    db.commit()
+    return {"message": "Post deleted successfully"}
+
+
 @router.delete("/{post_id}")
 async def delete_post(
     post_id: int,
@@ -83,7 +94,6 @@ async def delete_post(
     post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-    
     post.is_active = 0
     db.commit()
     return {"message": "Post deleted successfully"}

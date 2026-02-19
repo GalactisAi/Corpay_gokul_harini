@@ -1,15 +1,26 @@
-from pydantic_settings import BaseSettings
-from typing import List
+from pathlib import Path
 import os
+
+from dotenv import load_dotenv
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import List
+
+# Load backend .env so DATABASE_URL is set when app runs from any cwd
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 
 class Settings(BaseSettings):
-    # Database - Supabase PostgreSQL connection string
-    # Format: postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
-    # Or use connection pooler: postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
-    # Get your connection string from: https://app.supabase.com/project/YOUR_PROJECT/settings/databa
+    # Allow extra env vars from .env so unknown keys don't cause ValidationError (e.g. extra_forbidden)
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
-    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./dashboard.db").replace("DATABASE_URL=", "")
+    # Database URL from DATABASE_URL env var. Empty when unset; consumers should fall back to SQLite to avoid crash.
+    database_url: str = Field(default="", validation_alias="DATABASE_URL")
 
     
     # Supabase Configuration
@@ -64,10 +75,6 @@ class Settings(BaseSettings):
     
     # Environment
     environment: str = "development"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 settings = Settings()

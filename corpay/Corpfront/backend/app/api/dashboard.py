@@ -18,7 +18,6 @@ from app.schemas.payments import PaymentDataResponse
 from app.schemas.system_performance import SystemPerformanceResponse
 from app.schemas.newsroom import NewsroomItemResponse
 from app.services.share_price_api import SharePriceService
-from app.services.linkedin_api import LinkedInService
 from app.services.newsroom_scraper import (
     fetch_corpay_newsroom,
     fetch_corpay_resources_newsroom,
@@ -214,35 +213,20 @@ async def get_revenue_proportions(db: Session = Depends(get_db)):
 
 @router.get("/posts", response_model=List[SocialPostResponse])
 async def get_corpay_posts(limit: int = 10, db: Session = Depends(get_db)):
-    """Get Corpay LinkedIn posts - returns both manual and API posts"""
+    """Get Corpay posts - only from database (manually added by admin). No external API."""
     try:
-        # Get all active posts from database (both manual and API)
-        # Note: SQLAlchemy filter uses AND by default, so we need to check both conditions
         db_posts = db.query(SocialPost).filter(
             SocialPost.post_type == "corpay"
         ).filter(
             SocialPost.is_active == 1
         ).order_by(SocialPost.created_at.desc()).limit(limit).all()
         
-        # If we have posts in DB (manual or API), return them with normalized image_url
-        if db_posts:
-            return [
-                SocialPostResponse.model_validate(p).model_copy(
-                    update={"image_url": _normalize_post_image_url(getattr(p, "image_url", None))}
-                )
-                for p in db_posts
-            ]
-        
-        # If no posts in DB, try to fetch from API as fallback
-        try:
-            api_posts = await LinkedInService.get_corpay_posts(limit)
-            return [
-                SocialPostResponse(**{**post, "image_url": _normalize_post_image_url(post.get("image_url"))})
-                for post in api_posts
-            ]
-        except Exception:
-            # Return empty list if API also fails
-            return []
+        return [
+            SocialPostResponse.model_validate(p).model_copy(
+                update={"image_url": _normalize_post_image_url(getattr(p, "image_url", None))}
+            )
+            for p in db_posts
+        ]
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -254,34 +238,20 @@ async def get_corpay_posts(limit: int = 10, db: Session = Depends(get_db)):
 
 @router.get("/cross-border-posts", response_model=List[SocialPostResponse])
 async def get_cross_border_posts(limit: int = 10, db: Session = Depends(get_db)):
-    """Get Cross-Border LinkedIn posts - returns both manual and API posts"""
+    """Get Cross-Border posts - only from database (manually added by admin). No external API."""
     try:
-        # Get all active posts from database (both manual and API)
         db_posts = db.query(SocialPost).filter(
             SocialPost.post_type == "cross_border"
         ).filter(
             SocialPost.is_active == 1
         ).order_by(SocialPost.created_at.desc()).limit(limit).all()
         
-        # If we have posts in DB (manual or API), return them with normalized image_url
-        if db_posts:
-            return [
-                SocialPostResponse.model_validate(p).model_copy(
-                    update={"image_url": _normalize_post_image_url(getattr(p, "image_url", None))}
-                )
-                for p in db_posts
-            ]
-        
-        # If no posts in DB, try to fetch from API as fallback
-        try:
-            api_posts = await LinkedInService.get_cross_border_posts(limit)
-            return [
-                SocialPostResponse(**{**post, "image_url": _normalize_post_image_url(post.get("image_url"))})
-                for post in api_posts
-            ]
-        except Exception:
-            # Return empty list if API also fails
-            return []
+        return [
+            SocialPostResponse.model_validate(p).model_copy(
+                update={"image_url": _normalize_post_image_url(getattr(p, "image_url", None))}
+            )
+            for p in db_posts
+        ]
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)

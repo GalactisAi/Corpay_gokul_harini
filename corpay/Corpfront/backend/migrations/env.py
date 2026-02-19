@@ -1,6 +1,11 @@
+# Load backend .env (same path as app/config.py) so DATABASE_URL is set before app.config is imported.
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
+
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import create_engine
 from sqlalchemy import pool
 
 from alembic import context
@@ -20,17 +25,8 @@ from app.database import Base
 from app.models import *  # Import all models
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
-
-# Override sqlalchemy.url from environment variable
-import os
+# Database URL comes only from app.config.settings (reads .env). Never from alembic.ini or a hardcoded string.
 from app.config import settings
-# Escape % signs for ConfigParser (double % to escape)
-db_url_escaped = settings.database_url.replace('%', '%%')
-config.set_main_option("sqlalchemy.url", db_url_escaped)
 
 
 def run_migrations_offline() -> None:
@@ -45,7 +41,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = settings.database_url or "sqlite:///./dashboard.db"
+    print(f"DEBUG: Using database URL: {settings.database_url or 'sqlite:///./dashboard.db (fallback)'}")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -62,12 +59,17 @@ def run_migrations_online() -> None:
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
-
+    Engine is created from app.config.settings.database_url only (no alembic.ini, no hardcoded URL).
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    url = settings.database_url or "sqlite:///./dashboard.db"
+    print(f"DEBUG: Using database URL: {settings.database_url or 'sqlite:///./dashboard.db (fallback)'}")
+    connect_args = {}
+    if url and url.startswith("postgresql"):
+        connect_args["sslmode"] = "require"
+    connectable = create_engine(
+        url,
         poolclass=pool.NullPool,
+        connect_args=connect_args if connect_args else {},
     )
 
     with connectable.connect() as connection:
