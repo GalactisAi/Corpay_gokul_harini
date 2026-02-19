@@ -39,7 +39,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 10000,
+          timeout: 60000,
         }
       );
 
@@ -55,10 +55,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
     } catch (error: any) {
       console.error('Login error:', error);
+      const isTimeout = error.code === 'ECONNABORTED' || (error.message && String(error.message).toLowerCase().includes('timeout'));
       const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error';
-      const errorMessage = isNetworkError
-        ? 'Cannot reach server. Ensure the backend is running at http://localhost:8000.'
-        : (error.response?.data?.detail || error.message || 'Login failed');
+      const errorMessage = isTimeout
+        ? 'Server is waking up, please wait...'
+        : isNetworkError
+          ? 'Cannot reach server. Ensure the backend is running.'
+          : (error.response?.data?.detail || error.message || 'Login failed');
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

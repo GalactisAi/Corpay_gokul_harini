@@ -112,7 +112,7 @@ export function RevenuePage() {
     const load = async () => {
       try {
         try {
-          const res = await axios.get(`${API_BASE_URL}/api/admin/revenue/current-file-dev`, { timeout: 8000 });
+          const res = await axios.get(`${API_BASE_URL}/api/admin/revenue/current-file-dev`, { timeout: 60000 });
           if (res.data?.file_name) {
             setCurrentRevenueFile({
               file_name: res.data.file_name,
@@ -123,7 +123,7 @@ export function RevenuePage() {
           if (e.response?.status === 401 || e.response?.status === 403) {
             const r = await axios.get(`${API_BASE_URL}/api/admin/revenue/current-file`, {
               headers: token ? { Authorization: `Bearer ${token}` } : {},
-              timeout: 8000,
+              timeout: 60000,
             });
             if (r.data?.file_name) {
               setCurrentRevenueFile({ file_name: r.data.file_name, file_id: r.data.file_id ?? 0 });
@@ -150,7 +150,7 @@ export function RevenuePage() {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/admin/config`, {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000,
+          timeout: 60000,
         });
         const data = response.data || {};
         if (data.dashboard_payments_title) {
@@ -203,7 +203,7 @@ export function RevenuePage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          timeout: 10000,
+          timeout: 60000,
         }
       );
       toast.success('Card titles and subtitles saved. Main dashboard will update within 30 seconds or after refresh.');
@@ -248,7 +248,7 @@ export function RevenuePage() {
           formData,
           { 
             headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 30000
+            timeout: 60000
           }
         );
       } catch (devError: any) {
@@ -260,7 +260,7 @@ export function RevenuePage() {
               formData,
               { 
                 headers: { ...headers, 'Content-Type': 'multipart/form-data' },
-                timeout: 30000
+                timeout: 60000
               }
             );
           } catch (authError: any) {
@@ -326,7 +326,7 @@ export function RevenuePage() {
         response = await axios.post(
           `${API_BASE_URL}/api/admin/slideshow/start-dev`,
           {},
-          { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
         );
       } catch (devError: any) {
         // If dev endpoint fails, try auth endpoint
@@ -335,7 +335,7 @@ export function RevenuePage() {
             response = await axios.post(
               `${API_BASE_URL}/api/admin/slideshow/start`,
               {},
-              { headers, timeout: 10000 }
+              { headers, timeout: 60000 }
             );
           } catch (authError: any) {
             toast.error('Authentication required. Please log in.');
@@ -373,7 +373,7 @@ export function RevenuePage() {
         response = await axios.post(
           `${API_BASE_URL}/api/admin/slideshow/stop-dev`,
           {},
-          { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
         );
       } catch (devError: any) {
         // If dev endpoint fails, try auth endpoint
@@ -382,7 +382,7 @@ export function RevenuePage() {
             response = await axios.post(
               `${API_BASE_URL}/api/admin/slideshow/stop`,
               {},
-              { headers, timeout: 10000 }
+              { headers, timeout: 60000 }
             );
           } catch (authError: any) {
             toast.error('Authentication required. Please log in.');
@@ -433,7 +433,7 @@ export function RevenuePage() {
     try {
       // Use proxy in dev (empty string) or full URL in production
       const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-      const response = await axios.get(`${API_BASE_URL}/api/dashboard/revenue`, { timeout: 10000 });
+      const response = await axios.get(`${API_BASE_URL}/api/dashboard/revenue`, { timeout: 60000 });
       if (response.data) {
         setRevenueSummary({
           total_amount: Number(response.data.total_amount) || 0,
@@ -504,7 +504,7 @@ export function RevenuePage() {
 
     // First, check if backend is reachable
     try {
-      await axios.get(`${API_BASE_URL}/health`, { timeout: 3000 });
+      await axios.get(`${API_BASE_URL}/health`, { timeout: 60000 });
     } catch (healthError: any) {
       console.error('Backend health check failed:', healthError.message);
       toast.error(`Backend not reachable at ${API_BASE_URL}. Please ensure the backend server is running.`);
@@ -521,7 +521,7 @@ export function RevenuePage() {
           { proportions: proportionsData },
           { 
             headers: { 'Content-Type': 'application/json' },
-            timeout: 10000
+            timeout: 60000
           }
         );
         console.log('Successfully saved via dev endpoint');
@@ -532,7 +532,7 @@ export function RevenuePage() {
           { proportions: proportionsData },
           { 
             headers,
-            timeout: 10000
+            timeout: 60000
           }
         );
         console.log('Successfully saved via auth endpoint');
@@ -603,7 +603,7 @@ export function RevenuePage() {
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 30000,
+            timeout: 60000,
           }
         );
       } catch (devError: any) {
@@ -642,7 +642,7 @@ export function RevenuePage() {
                 'Content-Type': 'multipart/form-data',
                 'Authorization': `Bearer ${token}`,
               },
-              timeout: 30000,
+              timeout: 60000,
             }
           );
         } else {
@@ -656,8 +656,8 @@ export function RevenuePage() {
       // trends and proportions and notify the main dashboard.
       try {
         const [trendsRes, proportionsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/dashboard/revenue-trends`, { timeout: 10000 }),
-          axios.get(`${API_BASE_URL}/api/dashboard/revenue-proportions`, { timeout: 10000 }),
+          axios.get(`${API_BASE_URL}/api/dashboard/revenue-trends`, { timeout: 60000 }),
+          axios.get(`${API_BASE_URL}/api/dashboard/revenue-proportions`, { timeout: 60000 }),
         ]);
 
         if (trendsRes.data) {
@@ -716,12 +716,12 @@ export function RevenuePage() {
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
     try {
       try {
-        await axios.delete(`${API_BASE_URL}/api/admin/revenue/current-file-dev`, { timeout: 8000 });
+        await axios.delete(`${API_BASE_URL}/api/admin/revenue/current-file-dev`, { timeout: 60000 });
       } catch (e: any) {
         if (e.response?.status === 401 || e.response?.status === 403) {
           await axios.delete(`${API_BASE_URL}/api/admin/revenue/current-file`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
-            timeout: 8000,
+            timeout: 60000,
           });
         } else throw e;
       }
@@ -767,7 +767,7 @@ export function RevenuePage() {
       // First, check if backend is reachable
       try {
         console.log('Testing backend connection:', `${API_BASE_URL}/health`);
-        await axios.get(`${API_BASE_URL}/health`, { timeout: 3000 });
+        await axios.get(`${API_BASE_URL}/health`, { timeout: 60000 });
         console.log('Backend is reachable!');
       } catch (healthError: any) {
         console.error('Backend health check failed:', healthError.message);
@@ -791,7 +791,7 @@ export function RevenuePage() {
             },
             { 
               headers: { 'Content-Type': 'application/json' },
-              timeout: 10000 // 10 second timeout
+              timeout: 60000 // 10 second timeout
             }
           );
           console.log('Successfully saved via dev endpoint');
@@ -814,7 +814,7 @@ export function RevenuePage() {
               },
               { 
                 headers,
-                timeout: 10000 // 10 second timeout
+                timeout: 60000 // 10 second timeout
               }
             );
             console.log('Successfully saved via auth endpoint');
@@ -927,7 +927,7 @@ export function RevenuePage() {
     // First, check if backend is reachable
     try {
       console.log('Testing backend connection:', `${API_BASE_URL}/health`);
-      await axios.get(`${API_BASE_URL}/health`, { timeout: 3000 });
+      await axios.get(`${API_BASE_URL}/health`, { timeout: 60000 });
       console.log('Backend is reachable!');
     } catch (healthError: any) {
       console.error('Backend health check failed:', healthError.message);
@@ -948,7 +948,7 @@ export function RevenuePage() {
           },
           { 
             headers: { 'Content-Type': 'application/json' },
-            timeout: 10000
+            timeout: 60000
           }
         );
         console.log('Successfully saved via dev endpoint');
@@ -962,7 +962,7 @@ export function RevenuePage() {
           },
           { 
             headers,
-            timeout: 10000
+            timeout: 60000
           }
         );
         console.log('Successfully saved via auth endpoint');
@@ -1024,7 +1024,7 @@ export function RevenuePage() {
     }
 
     try {
-      await axios.get(`${API_BASE_URL}/health`, { timeout: 3000 });
+      await axios.get(`${API_BASE_URL}/health`, { timeout: 60000 });
     } catch (healthError: any) {
       toast.error(`Backend not reachable at ${API_BASE_URL}. Please ensure the backend server is running.`);
       setIsSavingPayment(false);
@@ -1037,7 +1037,7 @@ export function RevenuePage() {
         response = await axios.post(
           `${API_BASE_URL}/api/admin/payments`,
           paymentData,
-          { headers, timeout: 10000 }
+          { headers, timeout: 60000 }
         );
       } catch (authError: any) {
         if (authError.response?.status === 401 || authError.response?.status === 403) {
@@ -1083,7 +1083,7 @@ export function RevenuePage() {
     }
 
     try {
-      await axios.get(`${API_BASE_URL}/health`, { timeout: 3000 });
+      await axios.get(`${API_BASE_URL}/health`, { timeout: 60000 });
     } catch (healthError: any) {
       toast.error(`Backend not reachable at ${API_BASE_URL}. Please ensure the backend server is running.`);
       setIsSavingSystem(false);
@@ -1096,7 +1096,7 @@ export function RevenuePage() {
         response = await axios.post(
           `${API_BASE_URL}/api/admin/system`,
           systemData,
-          { headers, timeout: 10000 }
+          { headers, timeout: 60000 }
         );
       } catch (authError: any) {
         if (authError.response?.status === 401 || authError.response?.status === 403) {

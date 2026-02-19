@@ -86,7 +86,7 @@ export function SwitchScreenPage() {
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
     const loadCurrent = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/dashboard/slideshow`, { timeout: 8000 });
+        const res = await axios.get(`${API_BASE_URL}/api/dashboard/slideshow`, { timeout: 60000 });
         if (res.data?.file_url && res.data?.type === 'file') {
           setUploadedPptUrl(res.data.file_url);
           setUploadedFileName(res.data.file_name || null);
@@ -131,7 +131,7 @@ export function SwitchScreenPage() {
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 30000,
+            timeout: 60000,
           }
         );
       } catch (devError: any) {
@@ -143,7 +143,7 @@ export function SwitchScreenPage() {
               formData,
               {
                 headers: { ...headers, 'Content-Type': 'multipart/form-data' },
-                timeout: 30000,
+                timeout: 60000,
               }
             );
           } catch (authError: any) {
@@ -186,12 +186,12 @@ export function SwitchScreenPage() {
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
     try {
       try {
-        await axios.delete(`${API_BASE_URL}/api/admin/slideshow/file-dev`, { timeout: 8000 });
+        await axios.delete(`${API_BASE_URL}/api/admin/slideshow/file-dev`, { timeout: 60000 });
       } catch (devErr: any) {
         if (devErr.response?.status === 401 || devErr.response?.status === 403) {
           await axios.delete(`${API_BASE_URL}/api/admin/slideshow/file`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
-            timeout: 8000,
+            timeout: 60000,
           });
         } else if (devErr.response?.status === 404) {
           // Already removed or endpoint not found; clear UI so upload option shows again
@@ -228,7 +228,7 @@ export function SwitchScreenPage() {
       await axios.post(
         `${API_BASE_URL}/api/admin/slideshow/set-url-dev`,
         { embed_url: url },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+        { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
       );
       return true;
     } catch (devError: any) {
@@ -237,7 +237,7 @@ export function SwitchScreenPage() {
           await axios.post(
             `${API_BASE_URL}/api/admin/slideshow/set-url`,
             { embed_url: url },
-            { headers, timeout: 10000 }
+            { headers, timeout: 60000 }
           );
           return true;
         } catch {
@@ -269,14 +269,14 @@ export function SwitchScreenPage() {
           await axios.post(
             `${API_BASE_URL}/api/admin/slideshow/start-dev`,
             { interval_seconds: intervalSeconds },
-            { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+            { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
           );
         } catch (devErr: any) {
           if (devErr.response?.status === 401 || devErr.response?.status === 403) {
             await axios.post(
               `${API_BASE_URL}/api/admin/slideshow/start`,
               { interval_seconds: intervalSeconds },
-              { headers, timeout: 10000 }
+              { headers, timeout: 60000 }
             );
           } else throw devErr;
         }
@@ -316,14 +316,14 @@ export function SwitchScreenPage() {
         response = await axios.post(
           `${API_BASE_URL}/api/admin/slideshow/start-dev`,
           { interval_seconds: intervalSeconds },
-          { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
         );
       } catch (devError: any) {
         if (devError.response?.status === 401 || devError.response?.status === 403) {
           response = await axios.post(
             `${API_BASE_URL}/api/admin/slideshow/start`,
             { interval_seconds: intervalSeconds },
-            { headers, timeout: 10000 }
+            { headers, timeout: 60000 }
           );
         } else {
           throw devError;
@@ -355,7 +355,7 @@ export function SwitchScreenPage() {
         response = await axios.post(
           `${API_BASE_URL}/api/admin/slideshow/stop-dev`,
           {},
-          { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
         );
       } catch (devError: any) {
         if (devError.response?.status === 401 || devError.response?.status === 403) {
@@ -363,7 +363,7 @@ export function SwitchScreenPage() {
             response = await axios.post(
               `${API_BASE_URL}/api/admin/slideshow/stop`,
               {},
-              { headers, timeout: 10000 }
+              { headers, timeout: 60000 }
             );
           } catch (authError: any) {
             toast.error('Authentication required. Please log in.');

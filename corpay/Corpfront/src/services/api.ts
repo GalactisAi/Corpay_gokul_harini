@@ -9,7 +9,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 20000, // 20s - newsroom/resources scrape corpay.com and can be slow on first load
+  timeout: 60000, // 60s - allow server wake-up and slow scrapes
 })
 
 // Dashboard API functions

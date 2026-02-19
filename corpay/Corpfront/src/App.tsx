@@ -948,7 +948,7 @@ export default function App() {
     const fetchSlideshowState = async () => {
       try {
         const base = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
-        const response = await axios.get(`${base}/dashboard/slideshow`, { timeout: 5000 });
+        const response = await axios.get(`${base}/dashboard/slideshow`, { timeout: 60000 });
         if (response.data) {
           const slideshowType: 'file' | 'url' = response.data.type === 'url' ? 'url' : 'file';
           const source = response.data.source || null;
@@ -1015,7 +1015,7 @@ export default function App() {
   useEffect(() => {
     if (!slideshowState.is_active) return;
     const base = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api';
-    axios.get(`${base}/dashboard/slideshow`, { timeout: 5000 }).then((response) => {
+    axios.get(`${base}/dashboard/slideshow`, { timeout: 60000 }).then((response) => {
       if (!response?.data) return;
       const slideshowType = response.data.type === 'url' ? 'url' : 'file';
       const source = response.data.source || null;

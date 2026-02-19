@@ -38,7 +38,7 @@ export const sharePriceService = {
       }
       
       const response = await axios.get(config.sharePriceApi, {
-        timeout: 5000,
+        timeout: 60000,
         headers: {
           'Accept': 'application/json'
         }
@@ -99,7 +99,7 @@ export const postsService = {
       }
       
       const response = await axios.get(config.linkedinPostsApi, {
-        timeout: 5000,
+        timeout: 60000,
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('apiToken') || ''}`

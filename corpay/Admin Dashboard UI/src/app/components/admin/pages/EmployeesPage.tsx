@@ -100,7 +100,7 @@ export function EmployeesPage() {
       // Try dev endpoint first
       let response;
       try {
-        response = await axios.get(`${API_BASE_URL}/api/admin/employees/dev`, { timeout: 5000 });
+        response = await axios.get(`${API_BASE_URL}/api/admin/employees/dev`, { timeout: 60000 });
       } catch (devError: any) {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         const headers: Record<string, string> = {
@@ -109,7 +109,7 @@ export function EmployeesPage() {
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         }
-        response = await axios.get(`${API_BASE_URL}/api/admin/employees`, { headers, timeout: 5000 });
+        response = await axios.get(`${API_BASE_URL}/api/admin/employees`, { headers, timeout: 60000 });
       }
       
       const employeesData = response.data || [];
@@ -168,7 +168,7 @@ export function EmployeesPage() {
             `${API_BASE_URL}/api/admin/employees/upload-photo-dev`,
             formDataUpload,
             { 
-              timeout: 30000
+              timeout: 60000
             }
           );
           avatarPath = uploadResponse.data.avatar_path;
@@ -207,8 +207,8 @@ export function EmployeesPage() {
       if (editingEmployee) {
         // Update existing milestone
         const milestoneId = editingEmployee.id;
-        const updatePayload = { headers: { 'Content-Type': 'application/json' }, timeout: 10000 };
-        const updatePayloadAuth = { headers, timeout: 10000 };
+        const updatePayload = { headers: { 'Content-Type': 'application/json' }, timeout: 60000 };
+        const updatePayloadAuth = { headers, timeout: 60000 };
         try {
           try {
             response = await axios.put(
@@ -255,7 +255,7 @@ export function EmployeesPage() {
             await axios.post(
               `${API_BASE_URL}/api/admin/employees/upload-photo-dev`,
               formDataUpload,
-              { timeout: 30000 }
+              { timeout: 60000 }
             );
           } catch (uploadError: any) {
             console.error('Photo upload on update failed:', uploadError);
@@ -268,7 +268,7 @@ export function EmployeesPage() {
             await axios.post(
               `${API_BASE_URL}/api/admin/employees/upload-photo-dev`,
               formDataUpload,
-              { timeout: 30000 }
+              { timeout: 60000 }
             );
           } catch (uploadError: any) {
             console.error('Photo upload on update failed:', uploadError);
@@ -280,7 +280,7 @@ export function EmployeesPage() {
           response = await axios.post(
             `${API_BASE_URL}/api/admin/employees/dev`,
             milestoneData,
-            { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+            { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
           );
           
           // If we have a photo file and milestone was created, upload photo with the new ID
@@ -293,7 +293,7 @@ export function EmployeesPage() {
                 `${API_BASE_URL}/api/admin/employees/upload-photo-dev`,
                 formDataUpload,
                 { 
-                  timeout: 30000
+                  timeout: 60000
                 }
               );
               // Update milestone with photo path
@@ -306,7 +306,7 @@ export function EmployeesPage() {
           response = await axios.post(
             `${API_BASE_URL}/api/admin/employees`,
             milestoneData,
-            { headers, timeout: 10000 }
+            { headers, timeout: 60000 }
           );
           
           // Upload photo with new ID if needed
@@ -324,7 +324,7 @@ export function EmployeesPage() {
                 formDataUpload,
                 { 
                   headers: uploadHeaders,
-                  timeout: 30000
+                  timeout: 60000
                 }
               );
               // Photo uploaded and linked to milestone
@@ -366,9 +366,9 @@ export function EmployeesPage() {
     try {
       // Try dev endpoint first
       try {
-        await axios.delete(`${API_BASE_URL}/api/admin/employees/dev/${id}`, { timeout: 10000 });
+        await axios.delete(`${API_BASE_URL}/api/admin/employees/dev/${id}`, { timeout: 60000 });
       } catch (devError: any) {
-        await axios.delete(`${API_BASE_URL}/api/admin/employees/${id}`, { headers, timeout: 10000 });
+        await axios.delete(`${API_BASE_URL}/api/admin/employees/${id}`, { headers, timeout: 60000 });
       }
       
       toast.success('Employee milestone deleted successfully');
