@@ -1,15 +1,15 @@
 import axios from 'axios'
 
-// Use proxy (/api) in dev when VITE_API_URL not set; full URL in production
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
-const baseURL = API_BASE_URL ? `${API_BASE_URL}/api` : '/api'
+// baseURL = ${VITE_API_URL}/api exactly once, no double slashes
+const raw = import.meta.env.VITE_API_URL ?? ''
+const baseURL = raw.trim() ? `${String(raw).replace(/\/+$/, '')}/api` : '/api'
 
 export const api = axios.create({
   baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60s - allow server wake-up and slow scrapes
+  timeout: 120000, // 120s - large uploads and server wake-up
 })
 
 // Dashboard API functions

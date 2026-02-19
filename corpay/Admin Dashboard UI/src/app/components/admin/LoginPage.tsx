@@ -4,7 +4,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { api } from '@/app/services/api';
 import corpayLogo from '@/assets/e2cb3fa95a48c26580b1b8f80641608a87f3d801.png';
 
 interface LoginPageProps {
@@ -16,9 +16,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Use relative URL to leverage Vite proxy (avoids CORS issues)
-  const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
-
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -29,17 +26,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/admin/auth/login`,
+      // POST to /api/admin/auth/login (baseURL is .../api, path is admin/auth/login)
+      const response = await api.post(
+        'admin/auth/login',
         {
           email,
           password,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 60000,
         }
       );
 

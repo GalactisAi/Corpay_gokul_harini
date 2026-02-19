@@ -88,7 +88,7 @@ export function PostsPage() {
       // Use no-auth dev endpoint first so delete works without login
       const res = await axios.delete(
         `${API_BASE_URL}/api/admin/posts/${postId}/dev`,
-        { timeout: 60000, validateStatus: () => true }
+        { timeout: 120000, validateStatus: () => true }
       );
       if (res.status === 200 || res.status === 204) {
         setPosts((prev) => prev.filter((p) => p.id !== id));
@@ -104,7 +104,7 @@ export function PostsPage() {
       if ((res.status === 401 || res.status === 403) && token) {
         const authRes = await axios.delete(
           `${API_BASE_URL}/api/admin/posts/${postId}`,
-          { headers: { Authorization: `Bearer ${token}` }, timeout: 60000 }
+          { headers: { Authorization: `Bearer ${token}` }, timeout: 120000 }
         );
         if (authRes.status === 200 || authRes.status === 204) {
           setPosts((prev) => prev.filter((p) => p.id !== id));
@@ -293,7 +293,7 @@ export function PostsPage() {
                         const res = await axios.post(
                           `${API_BASE_URL}/api/admin/posts/from-url-dev`,
                           { post_url: url.trim(), post_type: 'corpay' },
-                          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
+                          { headers: { 'Content-Type': 'application/json' }, timeout: 120000 }
                         );
                         return res;
                       } catch (devError: any) {
@@ -301,7 +301,7 @@ export function PostsPage() {
                           return await axios.post(
                             `${API_BASE_URL}/api/admin/posts/from-url`,
                             { post_url: url.trim(), post_type: 'corpay' },
-                            { headers, timeout: 60000 }
+                            { headers, timeout: 120000 }
                           );
                         }
                         throw devError;
@@ -472,7 +472,7 @@ export function PostsPage() {
                         const res = await axios.post(
                           `${API_BASE_URL}/api/admin/posts/from-url-dev`,
                           { post_url: url.trim(), post_type: 'cross_border' },
-                          { headers: { 'Content-Type': 'application/json' }, timeout: 60000 }
+                          { headers: { 'Content-Type': 'application/json' }, timeout: 120000 }
                         );
                         return res;
                       } catch (devError: any) {
@@ -480,7 +480,7 @@ export function PostsPage() {
                           return await axios.post(
                             `${API_BASE_URL}/api/admin/posts/from-url`,
                             { post_url: url.trim(), post_type: 'cross_border' },
-                            { headers, timeout: 60000 }
+                            { headers, timeout: 120000 }
                           );
                         }
                         throw devError;

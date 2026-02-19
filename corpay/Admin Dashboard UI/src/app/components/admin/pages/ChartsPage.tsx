@@ -73,7 +73,7 @@ export function ChartsPage() {
 
     // First, check if backend is reachable
     try {
-      await axios.get(`${API_BASE_URL}/health`, { timeout: 60000 });
+      await axios.get(`${API_BASE_URL}/health`, { timeout: 120000 });
     } catch (healthError: any) {
       console.error('Backend health check failed:', healthError.message);
       toast.error(`Backend not reachable at ${API_BASE_URL}. Please ensure the backend server is running.`);
@@ -90,7 +90,7 @@ export function ChartsPage() {
           { proportions: proportionsData },
           { 
             headers: { 'Content-Type': 'application/json' },
-            timeout: 60000
+            timeout: 120000
           }
         );
         console.log('Successfully saved via dev endpoint');
@@ -101,7 +101,7 @@ export function ChartsPage() {
           { proportions: proportionsData },
           { 
             headers,
-            timeout: 60000
+            timeout: 120000
           }
         );
         console.log('Successfully saved via auth endpoint');
