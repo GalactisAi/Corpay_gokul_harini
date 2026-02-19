@@ -79,8 +79,15 @@ async def delete_post_dev(post_id: int, db: Session = Depends(get_db)):
     post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-    post.is_active = 0
-    db.commit()
+    try:
+        post.is_active = 0
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete post: {str(e)}",
+        )
     return {"message": "Post deleted successfully"}
 
 
@@ -94,8 +101,15 @@ async def delete_post(
     post = db.query(SocialPost).filter(SocialPost.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-    post.is_active = 0
-    db.commit()
+    try:
+        post.is_active = 0
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete post: {str(e)}",
+        )
     return {"message": "Post deleted successfully"}
 
 

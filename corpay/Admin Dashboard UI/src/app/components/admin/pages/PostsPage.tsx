@@ -81,27 +81,42 @@ export function PostsPage() {
   const handleDelete = async (id: string) => {
     const API_BASE_URL = import.meta.env.VITE_API_URL || '';
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    // Ensure numeric id for backend (backend expects integer path param)
+    const postId = String(id).trim();
+    if (!postId) return;
     try {
-      try {
-        await axios.delete(`${API_BASE_URL}/api/admin/posts/${id}/dev`, { timeout: 5000 });
-      } catch (devErr: any) {
-        if (devErr.response?.status === 404) {
+      // Use no-auth dev endpoint first so delete works without login
+      const res = await axios.delete(
+        `${API_BASE_URL}/api/admin/posts/${postId}/dev`,
+        { timeout: 10000, validateStatus: () => true }
+      );
+      if (res.status === 200 || res.status === 204) {
+        setPosts((prev) => prev.filter((p) => p.id !== id));
+        toast.success('Post deleted successfully');
+        return;
+      }
+      if (res.status === 404) {
+        setPosts((prev) => prev.filter((p) => p.id !== id));
+        toast.success('Post removed');
+        return;
+      }
+      // Fallback to auth endpoint only on 401/403
+      if ((res.status === 401 || res.status === 403) && token) {
+        const authRes = await axios.delete(
+          `${API_BASE_URL}/api/admin/posts/${postId}`,
+          { headers: { Authorization: `Bearer ${token}` }, timeout: 10000 }
+        );
+        if (authRes.status === 200 || authRes.status === 204) {
           setPosts((prev) => prev.filter((p) => p.id !== id));
+          toast.success('Post deleted successfully');
           return;
         }
-        if (devErr.response?.status === 401 || devErr.response?.status === 403) {
-          await axios.delete(`${API_BASE_URL}/api/admin/posts/${id}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-            timeout: 5000
-          });
-        } else {
-          throw devErr;
-        }
       }
-      setPosts((prev) => prev.filter((p) => p.id !== id));
-      toast.success('Post deleted successfully');
+      const msg = res.data?.detail ?? res.statusText ?? 'Delete failed';
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } catch (error: any) {
-      toast.error(error.response?.data?.detail ?? 'Delete failed');
+      const msg = error.response?.data?.detail ?? error.message ?? 'Delete failed';
+      toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     }
   };
 

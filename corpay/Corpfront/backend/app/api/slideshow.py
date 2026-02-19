@@ -142,7 +142,7 @@ async def upload_ppt_file_dev(
         print(f"Warning: Could not record file upload: {e}")
     
     # Construct file URL
-    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
     file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
     # Update slideshow state with file info (but don't activate yet)
@@ -190,7 +190,7 @@ async def upload_ppt_file(
         print(f"Warning: Could not record file upload: {e}")
     
     # Construct file URL
-    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
     file_url = f"{API_BASE_URL}/uploads/{file_path}"
     
     # Update slideshow state with file info (but don't activate yet)
@@ -356,7 +356,12 @@ async def get_slide_images(db: Session = Depends(get_db)):
     if not _slideshow_state["file_url"]:
         raise HTTPException(status_code=404, detail="No presentation file uploaded")
     
-    file_path = _slideshow_state["file_url"].replace(f"{os.getenv('API_BASE_URL', 'http://localhost:8000')}/uploads/", "")
+    # Extract path after /uploads/ so it works regardless of host/port used when file was uploaded
+    file_url_raw = _slideshow_state["file_url"] or ""
+    if "/uploads/" in file_url_raw:
+        file_path = file_url_raw.split("/uploads/", 1)[1].lstrip("/")
+    else:
+        file_path = file_url_raw.replace("http://localhost:8000/uploads/", "").replace("http://localhost:8002/uploads/", "").lstrip("/")
     upload_dir = Path(settings.upload_dir)
     full_file_path = upload_dir / file_path
     
@@ -367,7 +372,7 @@ async def get_slide_images(db: Session = Depends(get_db)):
     slides_dir.mkdir(parents=True, exist_ok=True)
     
     base_name = full_file_path.stem
-    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
     suffix = full_file_path.suffix.lower()
 
     # PDF: convert each page to PNG with PyMuPDF (no LibreOffice needed)
