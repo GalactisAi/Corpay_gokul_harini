@@ -527,7 +527,8 @@ export default function App() {
           setCrossBorderPostsList(transformedCrossBorder.length > 0 ? transformedCrossBorder : crossBorderPosts);
         }
         if (employeesRes.status === 'fulfilled') {
-          const employeesData = employeesRes.value.data || [];
+          const raw = employeesRes.value.data;
+          const employeesData = Array.isArray(raw) ? raw : (raw && Array.isArray((raw as any).data) ? (raw as any).data : []);
           const MILESTONE_EMOJI: Record<string, string> = {
             anniversary: '📅',
             promotion: '📈',
@@ -545,7 +546,7 @@ export default function App() {
                 avatarUrl = emp.avatar_path;
               } else {
                 // Construct URL to backend uploads directory
-                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
                 avatarUrl = `${API_BASE_URL}/uploads/${emp.avatar_path}`;
               }
             }
@@ -896,8 +897,9 @@ export default function App() {
     const fetchEmployeesData = async () => {
       try {
         const employeesRes = await dashboardApi.getEmployees(20);
-        if (employeesRes && employeesRes.data) {
-          const employeesData = employeesRes.data || [];
+        if (employeesRes && employeesRes.data !== undefined) {
+          const raw = employeesRes.data;
+          const employeesData = Array.isArray(raw) ? raw : (raw && Array.isArray((raw as any).data) ? (raw as any).data : []);
           const MILESTONE_EMOJI: Record<string, string> = {
             anniversary: '📅',
             promotion: '📈',
@@ -915,7 +917,7 @@ export default function App() {
                 avatarUrl = emp.avatar_path;
               } else {
                 // Construct URL to backend uploads directory
-                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
                 avatarUrl = `${API_BASE_URL}/uploads/${emp.avatar_path}`;
               }
             }
@@ -937,7 +939,8 @@ export default function App() {
       }
     };
     
-    // Refresh employee milestones every 5 seconds
+    // Fetch employee milestones immediately and then every 5 seconds
+    fetchEmployeesData();
     const employeesInterval = setInterval(() => {
       fetchEmployeesData();
     }, 5000);
@@ -1177,7 +1180,7 @@ export default function App() {
           intervalSeconds={slideshowState.interval_seconds ?? 5}
           onClose={async () => {
             // When slideshow is closed from frontend, stop it on backend
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
             try {
               await axios.post(`${API_BASE_URL}/api/admin/slideshow/stop-dev`);
             } catch (error) {

@@ -263,12 +263,21 @@ async def get_cross_border_posts(limit: int = 10, db: Session = Depends(get_db))
 
 @router.get("/employees", response_model=List[EmployeeMilestoneResponse])
 async def get_employee_milestones(limit: int = 20, db: Session = Depends(get_db)):
-    """Get employee milestones"""
-    milestones = db.query(EmployeeMilestone).filter(
-        EmployeeMilestone.is_active == 1
-    ).order_by(EmployeeMilestone.milestone_date.desc()).limit(limit).all()
-    
-    return milestones
+    """Get employee milestones (active only; treat NULL is_active as active)."""
+    from sqlalchemy import or_
+    try:
+        milestones = (
+            db.query(EmployeeMilestone)
+            .filter(or_(EmployeeMilestone.is_active == 1, EmployeeMilestone.is_active.is_(None)))
+            .order_by(EmployeeMilestone.milestone_date.desc())
+            .limit(limit)
+            .all()
+        )
+        return milestones
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception("get_employee_milestones failed: %s", e)
+        return []
 
 
 @router.get("/payments", response_model=PaymentDataResponse)
