@@ -8,11 +8,13 @@ import { FileUpload } from '../FileUpload';
 import { PowerBIEmbed } from '../PowerBIEmbed';
 import { sharePriceService } from '@/app/services/apiService';
 import { toast } from 'sonner';
-import { Upload, Plus, TrendingUp, DollarSign, Trash2, PieChart } from 'lucide-react';
+import { Upload, Plus, TrendingUp, DollarSign, Trash2, PieChart, X } from 'lucide-react';
 import axios from 'axios';
 
 export function RevenuePage() {
   const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [currentRevenueFile, setCurrentRevenueFile] = useState<{ file_name: string; file_id: number } | null>(null);
+  const [loadingCurrentRevenueFile, setLoadingCurrentRevenueFile] = useState(true);
   const [pptFile, setPptFile] = useState<File | null>(null);
   const [manualRevenue, setManualRevenue] = useState('');
   const [lastMonth, setLastMonth] = useState('');
@@ -103,6 +105,41 @@ export function RevenuePage() {
     localStorage.setItem('systemSuccessRateSubtitle', systemSuccessRateSubtitle);
   }, [systemSuccessRateSubtitle]);
   
+  // Load current revenue trend file from backend on mount (persisted; survives refresh)
+  useEffect(() => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const load = async () => {
+      try {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/api/admin/revenue/current-file-dev`, { timeout: 8000 });
+          if (res.data?.file_name) {
+            setCurrentRevenueFile({
+              file_name: res.data.file_name,
+              file_id: res.data.file_id ?? 0,
+            });
+          }
+        } catch (e: any) {
+          if (e.response?.status === 401 || e.response?.status === 403) {
+            const r = await axios.get(`${API_BASE_URL}/api/admin/revenue/current-file`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+              timeout: 8000,
+            });
+            if (r.data?.file_name) {
+              setCurrentRevenueFile({ file_name: r.data.file_name, file_id: r.data.file_id ?? 0 });
+            }
+          }
+          // 404 or other: leave currentRevenueFile null
+        }
+      } catch {
+        // no file or API down
+      } finally {
+        setLoadingCurrentRevenueFile(false);
+      }
+    };
+    load();
+  }, []);
+
   // Load card titles and subtitles from backend config on mount
   useEffect(() => {
     const loadCardTitlesFromBackend = async () => {
@@ -642,6 +679,10 @@ export function RevenuePage() {
 
       toast.success('Revenue data uploaded and processed successfully');
       setExcelFile(null);
+      setCurrentRevenueFile({
+        file_name: excelFile.name,
+        file_id: response.data?.file_id ?? 0,
+      });
     } catch (error) {
       console.error('Error uploading revenue Excel file:', error);
       // #region agent log
@@ -667,6 +708,28 @@ export function RevenuePage() {
       toast.error(`Upload failed: ${message}`);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDeleteRevenueFile = async () => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    try {
+      try {
+        await axios.delete(`${API_BASE_URL}/api/admin/revenue/current-file-dev`, { timeout: 8000 });
+      } catch (e: any) {
+        if (e.response?.status === 401 || e.response?.status === 403) {
+          await axios.delete(`${API_BASE_URL}/api/admin/revenue/current-file`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            timeout: 8000,
+          });
+        } else throw e;
+      }
+      setCurrentRevenueFile(null);
+      setExcelFile(null);
+      toast.success('Revenue file cleared. You can upload a new Excel file.');
+    } catch (e: any) {
+      toast.error(e.response?.data?.detail || 'Failed to clear file');
     }
   };
 
@@ -1487,31 +1550,56 @@ export function RevenuePage() {
                 <CardHeader>
                   <CardTitle className="text-white">Upload Revenue Trends Excel</CardTitle>
                   <CardDescription className="text-gray-400">
-                    Upload an Excel file containing revenue trends by month, or use Power BI dashboard above
+                    Upload an Excel file containing revenue trends by month, or use Power BI dashboard above. Trend data persists until you remove it.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <FileUpload
-                    selectedFile={excelFile}
-                    onFileSelect={setExcelFile}
-                    onClear={() => setExcelFile(null)}
-                    label="Select Excel File"
-                  />
-                  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                    <h4 className="text-white mb-2">Expected Format:</h4>
-                    <ul className="text-sm text-gray-400 space-y-1">
-                      <li>• Column A: Month</li>
-                      <li>• Column B: Revenue Amount</li>
-                      <li>• Column C: Growth Rate (%)</li>
-                    </ul>
-                  </div>
-                  <Button 
-                    onClick={handleExcelUpload}
-                    disabled={!excelFile || isUploading}
-                    className="w-full bg-pink-600 hover:bg-pink-700"
-                  >
-                    {isUploading ? 'Uploading...' : 'Upload Trends Data'}
-                  </Button>
+                  {loadingCurrentRevenueFile ? (
+                    <p className="text-sm text-gray-400">Loading...</p>
+                  ) : currentRevenueFile ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-white/20 bg-white/5 p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-white truncate" title={currentRevenueFile.file_name}>
+                          {currentRevenueFile.file_name}
+                        </p>
+                        <p className="text-xs text-green-400">✓ Trend data from this file. Remove to upload a new file.</p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={handleDeleteRevenueFile}
+                        className="shrink-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                        title="Remove file (upload a new one after this)"
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <FileUpload
+                        selectedFile={excelFile}
+                        onFileSelect={setExcelFile}
+                        onClear={() => setExcelFile(null)}
+                        label="Select Excel File"
+                      />
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                        <h4 className="text-white mb-2">Expected Format:</h4>
+                        <ul className="text-sm text-gray-400 space-y-1">
+                          <li>• Column A: Month</li>
+                          <li>• Column B: Revenue Amount</li>
+                          <li>• Column C: Growth Rate (%)</li>
+                        </ul>
+                      </div>
+                      <Button 
+                        onClick={handleExcelUpload}
+                        disabled={!excelFile || isUploading}
+                        className="w-full bg-pink-600 hover:bg-pink-700"
+                      >
+                        {isUploading ? 'Uploading...' : 'Upload Trends Data'}
+                      </Button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             )}

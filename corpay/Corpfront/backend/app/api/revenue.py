@@ -5,14 +5,29 @@ from datetime import datetime
 from app.database import get_db
 from app.models.revenue import Revenue, RevenueTrend, RevenueProportion, SharePrice
 from app.models.file_upload import FileUpload, FileType
+from app.models.api_config import ApiConfig
 from app.schemas.revenue import RevenueResponse, RevenueTrendResponse, RevenueProportionResponse, SharePriceResponse
 from app.utils.auth import get_current_admin_user
-from app.utils.file_handler import save_uploaded_file, get_file_size_mb
+from app.utils.file_handler import save_uploaded_file, get_file_size_mb, delete_file
 from app.services.excel_parser import ExcelParser
 from app.models.user import User
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/admin/revenue", tags=["admin-revenue"])
+
+
+def _get_config_value(db, key: str):
+    row = db.query(ApiConfig).filter(ApiConfig.config_key == key, ApiConfig.is_active == 1).first()
+    return (row.config_value or "").strip() or None if row else None
+
+
+def _set_config_value(db, key: str, value: str) -> None:
+    row = db.query(ApiConfig).filter(ApiConfig.config_key == key).first()
+    if row:
+        row.config_value = value or ""
+    else:
+        db.add(ApiConfig(config_key=key, config_value=value or "", is_active=1))
+    db.commit()
 
 
 @router.post("/upload")
@@ -97,7 +112,10 @@ async def upload_revenue_file(
         
         file_upload.processed = 1
         db.commit()
-        
+        # Persist current revenue file so it survives refresh (Trend data from this file)
+        _set_config_value(db, "revenue_trend_file_id", str(file_upload.id))
+        _set_config_value(db, "revenue_trend_file_name", file.filename)
+        _set_config_value(db, "revenue_trend_file_path", file_path)
         return {"message": "File processed successfully", "file_id": file_upload.id}
     
     except Exception as e:
@@ -200,6 +218,10 @@ async def upload_revenue_file_dev(
 
         file_upload.processed = 1
         db.commit()
+        # Persist current revenue file so it survives refresh (Trend data from this file)
+        _set_config_value(db, "revenue_trend_file_id", str(file_upload.id))
+        _set_config_value(db, "revenue_trend_file_name", file.filename)
+        _set_config_value(db, "revenue_trend_file_path", file_path)
 
         try:
             with open("/Users/madhujitharumugam/Desktop/latest_corpgit/corpay/.cursor/debug.log", "a") as f:
@@ -220,6 +242,60 @@ async def upload_revenue_file_dev(
         except Exception:
             pass
         raise HTTPException(status_code=500, detail=f"Unexpected error processing file: {str(e)}")
+
+
+@router.get("/current-file-dev")
+async def get_current_revenue_file_dev(db: Session = Depends(get_db)):
+    """Get current revenue trend file (last uploaded Excel) - dev, no auth."""
+    file_id = _get_config_value(db, "revenue_trend_file_id")
+    file_name = _get_config_value(db, "revenue_trend_file_name")
+    file_path = _get_config_value(db, "revenue_trend_file_path")
+    if not file_id and not file_name:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="No revenue file uploaded yet")
+    return {"file_id": int(file_id) if file_id else None, "file_name": file_name or "", "file_path": file_path or ""}
+
+
+@router.get("/current-file")
+async def get_current_revenue_file(
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Get current revenue trend file (last uploaded Excel)."""
+    file_id = _get_config_value(db, "revenue_trend_file_id")
+    file_name = _get_config_value(db, "revenue_trend_file_name")
+    file_path = _get_config_value(db, "revenue_trend_file_path")
+    if not file_id and not file_name:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="No revenue file uploaded yet")
+    return {"file_id": int(file_id) if file_id else None, "file_name": file_name or "", "file_path": file_path or ""}
+
+
+@router.delete("/current-file-dev")
+async def delete_current_revenue_file_dev(db: Session = Depends(get_db)):
+    """Remove current revenue file from storage and config (dev). X button clears so new upload can replace."""
+    file_path = _get_config_value(db, "revenue_trend_file_path")
+    if file_path:
+        delete_file(file_path)
+    _set_config_value(db, "revenue_trend_file_id", "")
+    _set_config_value(db, "revenue_trend_file_name", "")
+    _set_config_value(db, "revenue_trend_file_path", "")
+    return {"message": "Current revenue file cleared. Upload a new Excel to set trend data."}
+
+
+@router.delete("/current-file")
+async def delete_current_revenue_file(
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Remove current revenue file from storage and config. X button clears so new upload can replace."""
+    file_path = _get_config_value(db, "revenue_trend_file_path")
+    if file_path:
+        delete_file(file_path)
+    _set_config_value(db, "revenue_trend_file_id", "")
+    _set_config_value(db, "revenue_trend_file_name", "")
+    _set_config_value(db, "revenue_trend_file_path", "")
+    return {"message": "Current revenue file cleared. Upload a new Excel to set trend data."}
 
 
 class ManualRevenueRequest(BaseModel):

@@ -6,7 +6,7 @@ import { Label } from '../../ui/label';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
 import { FileUpload } from '../FileUpload';
 import { toast } from 'sonner';
-import { Presentation, FileText, BarChart3 } from 'lucide-react';
+import { Presentation, FileText, BarChart3, X } from 'lucide-react';
 import axios from 'axios';
 
 const STORAGE_KEY = 'corpay_admin_switch_screen';
@@ -65,10 +65,12 @@ export function SwitchScreenPage() {
   const [sourceType, setSourceType] = useState<SourceType>('pdf');
   const [pptFile, setPptFile] = useState<File | null>(null);
   const [uploadedPptUrl, setUploadedPptUrl] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [embedUrl, setEmbedUrl] = useState<string>('');
   const [isUploadingPpt, setIsUploadingPpt] = useState(false);
   const [isSlideshowActive, setIsSlideshowActive] = useState(false);
   const [slideIntervalSeconds, setSlideIntervalSeconds] = useState<number>(5);
+  const [loadingCurrentFile, setLoadingCurrentFile] = useState(true);
 
   // Device-specific state: restore from localStorage on mount (each device/branch has its own)
   useEffect(() => {
@@ -76,6 +78,26 @@ export function SwitchScreenPage() {
     setSourceType(stored.sourceType);
     setEmbedUrl(stored.embedUrl);
     setSlideIntervalSeconds(stored.slideIntervalSeconds);
+  }, []);
+
+  // Load persisted slideshow file from backend on mount (so it survives refresh)
+  useEffect(() => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const loadCurrent = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/dashboard/slideshow`, { timeout: 8000 });
+        if (res.data?.file_url && res.data?.type === 'file') {
+          setUploadedPptUrl(res.data.file_url);
+          setUploadedFileName(res.data.file_name || null);
+        }
+      } catch {
+        // No file or API down
+      } finally {
+        setLoadingCurrentFile(false);
+      }
+    };
+    loadCurrent();
   }, []);
 
   // Persist when user changes source type, embed URL, or interval (device-specific)
@@ -135,7 +157,9 @@ export function SwitchScreenPage() {
       }
 
       const fileUrl = response.data.file_url;
+      const fileName = response.data.file_name || file?.name || null;
       setUploadedPptUrl(fileUrl);
+      setUploadedFileName(fileName);
       toast.success('File uploaded successfully');
       return fileUrl;
     } catch (error: any) {
@@ -153,6 +177,30 @@ export function SwitchScreenPage() {
       await uploadPptFile(file);
     } else {
       setUploadedPptUrl(null);
+      setUploadedFileName(null);
+    }
+  };
+
+  const handleDeleteSlideshowFile = async () => {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    try {
+      try {
+        await axios.delete(`${API_BASE_URL}/api/admin/slideshow/file-dev`, { timeout: 8000 });
+      } catch (devErr: any) {
+        if (devErr.response?.status === 401 || devErr.response?.status === 403) {
+          await axios.delete(`${API_BASE_URL}/api/admin/slideshow/file`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            timeout: 8000,
+          });
+        } else throw devErr;
+      }
+      setUploadedPptUrl(null);
+      setUploadedFileName(null);
+      setPptFile(null);
+      toast.success('File removed. You can upload a new file.');
+    } catch (e: any) {
+      toast.error(e.response?.data?.detail || 'Failed to remove file');
     }
   };
 
@@ -355,23 +403,46 @@ export function SwitchScreenPage() {
 
             {sourceType === 'pdf' && (
               <div className="mt-4 space-y-2">
-                <FileUpload
-                  selectedFile={pptFile}
-                  onFileSelect={handlePptFileSelect}
-                  onClear={() => {
-                    setPptFile(null);
-                    setUploadedPptUrl(null);
-                  }}
-                  label="Select PDF File"
-                  accept={{
-                    'application/pdf': ['.pdf'],
-                  }}
-                />
-                {isUploadingPpt && (
-                  <p className="text-sm text-gray-400">Uploading file...</p>
-                )}
-                {uploadedPptUrl && (
-                  <p className="text-sm text-green-400">✓ File uploaded successfully</p>
+                {loadingCurrentFile ? (
+                  <p className="text-sm text-gray-400">Loading...</p>
+                ) : uploadedPptUrl ? (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-white/20 bg-white/5 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate" title={uploadedFileName || undefined}>
+                        {uploadedFileName || 'Current file'}
+                      </p>
+                      <p className="text-xs text-green-400">✓ File saved. It will stay until you remove it.</p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={handleDeleteSlideshowFile}
+                      className="shrink-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                      title="Remove file (upload a new one after this)"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <FileUpload
+                      selectedFile={pptFile}
+                      onFileSelect={handlePptFileSelect}
+                      onClear={() => {
+                        setPptFile(null);
+                        setUploadedPptUrl(null);
+                        setUploadedFileName(null);
+                      }}
+                      label="Select PDF File"
+                      accept={{
+                        'application/pdf': ['.pdf'],
+                      }}
+                    />
+                    {isUploadingPpt && (
+                      <p className="text-sm text-gray-400">Uploading file...</p>
+                    )}
+                  </>
                 )}
               </div>
             )}

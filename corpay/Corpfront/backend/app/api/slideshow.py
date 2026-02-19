@@ -6,9 +6,10 @@ from datetime import datetime
 from urllib.parse import urlparse
 from app.database import get_db
 from app.utils.auth import get_current_admin_user
-from app.utils.file_handler import save_uploaded_file, get_file_size_mb
+from app.utils.file_handler import save_uploaded_file, get_file_size_mb, delete_file
 from app.models.user import User
 from app.models.file_upload import FileUpload, FileType
+from app.models.api_config import ApiConfig
 from pydantic import BaseModel
 import json
 import os
@@ -100,7 +101,7 @@ def _is_valid_url(url: str) -> bool:
         return False
 
 
-# In-memory storage for slideshow state (can be moved to database later)
+# In-memory runtime state (is_active, started_at); file/url persisted in ApiConfig
 _slideshow_state = {
     "is_active": False,
     "type": "file",
@@ -110,6 +111,41 @@ _slideshow_state = {
     "started_at": None,
     "interval_seconds": 5
 }
+
+SLIDESHOW_KEYS = ("slideshow_file_url", "slideshow_file_name", "slideshow_type", "slideshow_embed_url")
+
+
+def _get_config_value(db: Session, key: str) -> Optional[str]:
+    row = db.query(ApiConfig).filter(ApiConfig.config_key == key, ApiConfig.is_active == 1).first()
+    return (row.config_value or "").strip() or None if row else None
+
+
+def _set_config_value(db: Session, key: str, value: Optional[str]) -> None:
+    row = db.query(ApiConfig).filter(ApiConfig.config_key == key).first()
+    if row:
+        row.config_value = value or ""
+    else:
+        db.add(ApiConfig(config_key=key, config_value=value or "", is_active=1))
+    db.commit()
+
+
+def _load_slideshow_file_from_db(db: Session) -> None:
+    """Load persisted slideshow file/url from ApiConfig into _slideshow_state."""
+    url = _get_config_value(db, "slideshow_file_url")
+    name = _get_config_value(db, "slideshow_file_name")
+    typ = _get_config_value(db, "slideshow_type") or "file"
+    embed = _get_config_value(db, "slideshow_embed_url")
+    if url and name:
+        _slideshow_state["type"] = "file"
+        _slideshow_state["source"] = url
+        _slideshow_state["file_url"] = url
+        _slideshow_state["file_name"] = name
+    elif typ == "url" and embed:
+        _slideshow_state["type"] = "url"
+        _slideshow_state["source"] = embed
+        _slideshow_state["file_url"] = None
+        _slideshow_state["file_name"] = None
+    # else leave in-memory state as-is
 
 
 @router.post("/admin/slideshow/upload-dev")
@@ -150,6 +186,11 @@ async def upload_ppt_file_dev(
     _slideshow_state["source"] = file_url
     _slideshow_state["file_url"] = file_url
     _slideshow_state["file_name"] = file.filename
+    # Persist to DB so it survives refresh/restart
+    _set_config_value(db, "slideshow_file_url", file_url)
+    _set_config_value(db, "slideshow_file_name", file.filename)
+    _set_config_value(db, "slideshow_type", "file")
+    _set_config_value(db, "slideshow_embed_url", "")
     
     return {
         "message": "File uploaded successfully",
@@ -198,6 +239,11 @@ async def upload_ppt_file(
     _slideshow_state["source"] = file_url
     _slideshow_state["file_url"] = file_url
     _slideshow_state["file_name"] = file.filename
+    # Persist to DB so it survives refresh/restart
+    _set_config_value(db, "slideshow_file_url", file_url)
+    _set_config_value(db, "slideshow_file_name", file.filename)
+    _set_config_value(db, "slideshow_type", "file")
+    _set_config_value(db, "slideshow_embed_url", "")
     
     return {
         "message": "File uploaded successfully",
@@ -222,6 +268,10 @@ async def set_slideshow_url_dev(
     _slideshow_state["source"] = url
     _slideshow_state["file_url"] = None
     _slideshow_state["file_name"] = None
+    _set_config_value(db, "slideshow_file_url", "")
+    _set_config_value(db, "slideshow_file_name", "")
+    _set_config_value(db, "slideshow_type", "url")
+    _set_config_value(db, "slideshow_embed_url", url)
     return {
         "message": "Embed URL set successfully",
         "source": url,
@@ -245,6 +295,10 @@ async def set_slideshow_url(
     _slideshow_state["source"] = url
     _slideshow_state["file_url"] = None
     _slideshow_state["file_name"] = None
+    _set_config_value(db, "slideshow_file_url", "")
+    _set_config_value(db, "slideshow_file_name", "")
+    _set_config_value(db, "slideshow_type", "url")
+    _set_config_value(db, "slideshow_embed_url", url)
     return {
         "message": "Embed URL set successfully",
         "source": url,
@@ -334,9 +388,53 @@ async def stop_slideshow(
     }
 
 
+def _slideshow_file_url_to_relative_path(file_url: str) -> Optional[str]:
+    """Extract relative path under uploads/ from stored file URL."""
+    if not file_url or "/uploads/" not in file_url:
+        return None
+    path = file_url.split("/uploads/", 1)[1].strip().lstrip("/")
+    return path.replace("\\", "/") if path else None
+
+
+@router.delete("/admin/slideshow/file-dev")
+async def delete_slideshow_file_dev(db: Session = Depends(get_db)):
+    """Remove persisted slideshow file (dev, no auth). Deletes from storage and DB. Call X button."""
+    file_url = _get_config_value(db, "slideshow_file_url")
+    rel_path = _slideshow_file_url_to_relative_path(file_url or "")
+    if rel_path:
+        delete_file(rel_path)
+    _slideshow_state["type"] = "file"
+    _slideshow_state["source"] = None
+    _slideshow_state["file_url"] = None
+    _slideshow_state["file_name"] = None
+    for key in SLIDESHOW_KEYS:
+        _set_config_value(db, key, "")
+    return {"message": "Slideshow file removed. Upload a new file to replace."}
+
+
+@router.delete("/admin/slideshow/file")
+async def delete_slideshow_file(
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Remove persisted slideshow file. Deletes from storage and DB. Call X button."""
+    file_url = _get_config_value(db, "slideshow_file_url")
+    rel_path = _slideshow_file_url_to_relative_path(file_url or "")
+    if rel_path:
+        delete_file(rel_path)
+    _slideshow_state["type"] = "file"
+    _slideshow_state["source"] = None
+    _slideshow_state["file_url"] = None
+    _slideshow_state["file_name"] = None
+    for key in SLIDESHOW_KEYS:
+        _set_config_value(db, key, "")
+    return {"message": "Slideshow file removed. Upload a new file to replace."}
+
+
 @router.get("/dashboard/slideshow", response_model=SlideshowState)
 async def get_slideshow_state(db: Session = Depends(get_db)):
-    """Get current slideshow state (public endpoint for frontend dashboard). Returns type ('file'|'url'), source (path or link), interval_seconds."""
+    """Get current slideshow state (public endpoint for frontend dashboard). Loads persisted file/url from DB."""
+    _load_slideshow_file_from_db(db)
     slideshow_type = _slideshow_state.get("type", "file")
     source = _slideshow_state.get("source") or _slideshow_state.get("file_url")
     return SlideshowState(
@@ -352,7 +450,8 @@ async def get_slideshow_state(db: Session = Depends(get_db)):
 
 @router.get("/dashboard/slideshow/slides")
 async def get_slide_images(db: Session = Depends(get_db)):
-    """Convert PPT/PPTX or PDF to slide images for display."""
+    """Convert PPT/PPTX or PDF to slide images for display. Loads persisted file from DB if needed."""
+    _load_slideshow_file_from_db(db)
     if not _slideshow_state["file_url"]:
         raise HTTPException(status_code=404, detail="No presentation file uploaded")
     
