@@ -542,11 +542,17 @@ export default function App() {
           const transformedMilestones = employeesData.map((emp: any) => {
             let avatarUrl = 'https://via.placeholder.com/100';
             if (emp?.avatar_path) {
-              if (String(emp.avatar_path).startsWith('http://') || String(emp.avatar_path).startsWith('https://')) {
-                avatarUrl = emp.avatar_path;
+              const path = String(emp.avatar_path);
+              if (path.startsWith('http://') || path.startsWith('https://')) {
+                avatarUrl = path;
               } else {
-                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
-                avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${(emp.avatar_path as string).replace(/^\/+/, '')}`;
+                const supabasePublic = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL;
+                if (supabasePublic && String(supabasePublic).trim()) {
+                  avatarUrl = `${String(supabasePublic).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+                } else {
+                  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+                  avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
+                }
               }
             }
             return {
@@ -909,11 +915,17 @@ export default function App() {
           const transformedMilestones = employeesData.map((emp: any) => {
             let avatarUrl = 'https://via.placeholder.com/100';
             if (emp?.avatar_path) {
-              if (String(emp.avatar_path).startsWith('http://') || String(emp.avatar_path).startsWith('https://')) {
-                avatarUrl = emp.avatar_path;
+              const path = String(emp.avatar_path);
+              if (path.startsWith('http://') || path.startsWith('https://')) {
+                avatarUrl = path;
               } else {
-                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
-                avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${String(emp.avatar_path).replace(/^\/+/, '')}`;
+                const supabasePublic = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL;
+                if (supabasePublic && String(supabasePublic).trim()) {
+                  avatarUrl = `${String(supabasePublic).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+                } else {
+                  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+                  avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
+                }
               }
             }
             return {
@@ -1476,11 +1488,11 @@ export default function App() {
                 >
                   {(Array.isArray(resourceItems) && resourceItems.length > 0 ? resourceItems.slice(0, 8) : fallbackResources).map((item, index) => (
                     <ResourceCard
-                      key={index}
+                      key={'id' in item && item.id != null ? item.id : index}
                       title={item.title || 'Resource'}
                       description={item.excerpt || ''}
                       type={index % 2 === 0 ? 'case-study' : 'whitepaper'}
-                      url={item.url || 'https://www.corpay.com/resources/newsroom'}
+                      url={item.url || undefined}
                     />
                   ))}
                 </div>

@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// baseURL = ${VITE_API_URL}/api exactly once, no double slashes
+// Base URL: exactly ${VITE_API_URL}/api so every request (login, revenue, employees) has /api once — avoids 404s
 const raw = import.meta.env.VITE_API_URL ?? ''
 const baseURL = raw.trim() ? `${String(raw).replace(/\/+$/, '')}/api` : '/api'
 
@@ -9,7 +9,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000, // 120s - large uploads and server wake-up
+  timeout: 120000, // 2 minutes for large PDF/Excel processing
 })
 
 // Dashboard API functions

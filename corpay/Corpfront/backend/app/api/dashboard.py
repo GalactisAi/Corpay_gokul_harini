@@ -427,7 +427,7 @@ async def get_resources_newsroom_items(limit: int = 4) -> List[NewsroomItemRespo
     if cached is not None:
         return cached
     items = await fetch_corpay_resources_newsroom(limit=limit)
-    result = [NewsroomItemResponse(**item) for item in items]
+    result = [NewsroomItemResponse(id=idx, **item) for idx, item in enumerate(items)]
     set(cache_key, result, ttl_seconds=300)
     return result
 

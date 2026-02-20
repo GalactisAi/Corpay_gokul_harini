@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 /**
- * Base URL for API: always ends with /api exactly once, no trailing slash.
- * - With VITE_API_URL set: `${VITE_API_URL}/api` (slashes normalized to avoid api//admin)
+ * Base URL for API: exactly ${VITE_API_URL}/api so every request has /api exactly once (avoids 404s).
+ * - With VITE_API_URL set: `${VITE_API_URL}/api` (no trailing slash on env)
  * - With proxy (no VITE_API_URL): '/api'
  */
 function getBaseURL(): string {
@@ -19,7 +19,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000, // 120s for large uploads and server wake-up
+  timeout: 120000, // 2 minutes for large PDF/Excel processing
 });
 
 // Request path should NOT start with / so we get baseURL + '/' + path (e.g. /api/admin/auth/login)
