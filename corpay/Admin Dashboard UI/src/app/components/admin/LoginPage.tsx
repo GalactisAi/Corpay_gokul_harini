@@ -4,7 +4,8 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { toast } from 'sonner';
-import { api } from '@/app/services/api';
+import axios from 'axios';
+import { apiBaseURL } from '@/app/services/api';
 import corpayLogo from '@/assets/e2cb3fa95a48c26580b1b8f80641608a87f3d801.png';
 
 interface LoginPageProps {
@@ -26,13 +27,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     setIsLoading(true);
     try {
-      // POST to /api/admin/auth/login (baseURL is .../api, path is admin/auth/login)
-      const response = await api.post(
-        'admin/auth/login',
-        {
-          email,
-          password,
-        }
+      // Final URL: .../api/admin/auth/login (apiBaseURL includes /api, path is /admin/auth/login)
+      const response = await axios.post(
+        `${apiBaseURL}/admin/auth/login`,
+        { email, password },
+        { timeout: 60000, headers: { 'Content-Type': 'application/json' } }
       );
 
       // Store token and user info

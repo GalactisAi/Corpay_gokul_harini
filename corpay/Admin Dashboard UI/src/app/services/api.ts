@@ -2,7 +2,7 @@ import axios from 'axios';
 
 /**
  * Base URL with /api exactly once: ${VITE_API_URL}/api (or '/api' when no env).
- * Use this for all API calls so the /api prefix is never missing or duplicated.
+ * Use for all API calls so the final URL is .../api/admin/... (not .../admin/... or .../api/api/...).
  */
 export function getBaseURL(): string {
   const base = import.meta.env.VITE_API_URL;
@@ -12,6 +12,9 @@ export function getBaseURL(): string {
   }
   return '/api';
 }
+
+/** Alias for login and other services: base for POST/GET (e.g. .../api). */
+export const apiBaseURL = getBaseURL();
 
 export const api = axios.create({
   baseURL: getBaseURL(),
