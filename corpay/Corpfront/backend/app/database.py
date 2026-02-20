@@ -19,17 +19,15 @@ _MAX_DB_RETRIES = 2  # max 2 retries = 3 total attempts
 
 
 def _pg_engine(url: str):
-    """PostgreSQL engine tuned for Supabase free tier to avoid SSL connection drops."""
+    """PostgreSQL engine for Supabase free tier pooler (port 6543). Prevents QueuePool limit timeout."""
     return create_engine(
         url,
-        connect_args={
-            "sslmode": "require",  # Supabase requires SSL
-        },
-        pool_size=3,           # Low to stay under free tier connection limits
-        max_overflow=0,        # No extra connections beyond pool_size
-        pool_recycle=300,      # Refresh connections every 5 minutes
-        pool_pre_ping=True,    # Check connection is alive before use
-        echo=False,
+        pool_size=5,
+        max_overflow=2,
+        pool_timeout=30,
+        pool_recycle=300,
+        pool_pre_ping=True,
+        connect_args={"sslmode": "require"},
     )
 
 
