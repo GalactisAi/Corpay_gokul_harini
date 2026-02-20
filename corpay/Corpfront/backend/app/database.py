@@ -1,7 +1,7 @@
 """
 Production-safe database configuration for FastAPI + SQLAlchemy + Supabase PostgreSQL.
 Fixes SSL connection closed unexpectedly after Railway idle wake-up.
-Optimized for Supabase free tier: small pool, no overflow, recycle and pre-ping.
+Tuned for Supabase Pro: larger pool and overflow to avoid QueuePool limit errors.
 """
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
@@ -19,15 +19,15 @@ _MAX_DB_RETRIES = 2  # max 2 retries = 3 total attempts
 
 
 def _pg_engine(url: str):
-    """PostgreSQL engine for Supabase free tier pooler (port 6543). Prevents QueuePool limit timeout."""
+    """PostgreSQL engine for Supabase Pro. Larger pool to avoid QueuePool limit reached errors."""
     return create_engine(
         url,
-        pool_size=5,
-        max_overflow=2,
+        pool_size=20,
+        max_overflow=10,
         pool_timeout=30,
         pool_recycle=300,
         pool_pre_ping=True,
-        connect_args={"sslmode": "require"},
+        connect_args={"sslmode": "require", "connect_timeout": 10},
     )
 
 
@@ -41,18 +41,9 @@ def _sqlite_engine(url: str):
 
 
 if DATABASE_URL.startswith("postgresql"):
-    try:
-        engine = _pg_engine(DATABASE_URL)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-    except Exception as e:
-        import warnings
-        warnings.warn(
-            f"Supabase/Postgres connection failed ({e!r}). "
-            "Using local SQLite so the server can start."
-        )
-        DATABASE_URL = "sqlite:///./dashboard.db"
-        engine = _sqlite_engine(DATABASE_URL)
+    engine = _pg_engine(DATABASE_URL)
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
 else:
     engine = _sqlite_engine(DATABASE_URL)
 
