@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 /**
- * Base URL for API: exactly ${VITE_API_URL}/api so every request has /api exactly once (avoids 404s).
- * - With VITE_API_URL set: `${VITE_API_URL}/api` (no trailing slash on env)
- * - With proxy (no VITE_API_URL): '/api'
+ * baseURL = ${VITE_API_URL}/api exactly once — login and data calls use correct /api prefix.
+ * With proxy (no VITE_API_URL): '/api'
  */
 function getBaseURL(): string {
   const base = import.meta.env.VITE_API_URL;
@@ -19,7 +18,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000, // 2 minutes for large PDF/Excel processing
+  timeout: 60000, // 60s — slow database wake-ups don't crash initial login
 });
 
 // Request path should NOT start with / so we get baseURL + '/' + path (e.g. /api/admin/auth/login)

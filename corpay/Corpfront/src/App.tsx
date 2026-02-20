@@ -540,15 +540,16 @@ export default function App() {
             achievement: '🏆'
           };
           const transformedMilestones = employeesData.map((emp: any) => {
+            // Milestone photos: prepend Supabase Storage bucket public URL to filename from DB
             let avatarUrl = 'https://via.placeholder.com/100';
             if (emp?.avatar_path) {
               const path = String(emp.avatar_path);
               if (path.startsWith('http://') || path.startsWith('https://')) {
                 avatarUrl = path;
               } else {
-                const supabasePublic = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL;
-                if (supabasePublic && String(supabasePublic).trim()) {
-                  avatarUrl = `${String(supabasePublic).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+                const bucketPublicUrl = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL;
+                if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
+                  avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
                   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
                   avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
@@ -913,15 +914,16 @@ export default function App() {
             achievement: '🏆'
           };
           const transformedMilestones = employeesData.map((emp: any) => {
+            // Milestone photos: prepend Supabase Storage bucket public URL to filename from DB
             let avatarUrl = 'https://via.placeholder.com/100';
             if (emp?.avatar_path) {
               const path = String(emp.avatar_path);
               if (path.startsWith('http://') || path.startsWith('https://')) {
                 avatarUrl = path;
               } else {
-                const supabasePublic = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL;
-                if (supabasePublic && String(supabasePublic).trim()) {
-                  avatarUrl = `${String(supabasePublic).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+                const bucketPublicUrl = import.meta.env.VITE_SUPABASE_STORAGE_PUBLIC_URL;
+                if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
+                  avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
                   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
                   avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
@@ -1492,6 +1494,7 @@ export default function App() {
                       title={item.title || 'Resource'}
                       description={item.excerpt || ''}
                       type={index % 2 === 0 ? 'case-study' : 'whitepaper'}
+                      resourceId={'id' in item ? item.id : undefined}
                       url={item.url || undefined}
                     />
                   ))}

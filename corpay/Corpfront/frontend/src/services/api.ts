@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// Base URL: exactly ${VITE_API_URL}/api when set (avoids 404s); else proxy /api
+// baseURL = ${VITE_API_URL}/api exactly once when set; else proxy /api
 const raw = import.meta.env.VITE_API_URL ?? ''
 const baseURL = raw.trim() ? `${String(raw).replace(/\/+$/, '')}/api` : '/api'
 
@@ -9,7 +9,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000, // 2 minutes for large PDF/Excel processing
+  timeout: 60000, // 60s — slow database wake-ups don't crash initial login
 })
 
 // Add token to requests if available

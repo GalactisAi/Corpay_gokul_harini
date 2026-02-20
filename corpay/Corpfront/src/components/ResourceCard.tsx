@@ -4,10 +4,13 @@ interface ResourceCardProps {
   title: string;
   description: string;
   type: 'case-study' | 'whitepaper';
+  /** When set, card navigates to /resources/${resourceId} (fixes incorrect redirection) */
+  resourceId?: number | string | null;
+  /** Fallback external URL when resourceId is not set */
   url?: string;
 }
 
-export function ResourceCard({ title, description, type, url }: ResourceCardProps) {
+export function ResourceCard({ title, description, type, resourceId, url }: ResourceCardProps) {
   const Icon = type === 'case-study' ? FileText : BookOpen;
   const bgColor = type === 'case-study' ? '#3D1628' : '#981239';
 
@@ -26,6 +29,18 @@ export function ResourceCard({ title, description, type, url }: ResourceCardProp
   );
 
   const className = "flex items-start gap-3 p-3 bg-gray-50/60 rounded-lg cursor-pointer hover:bg-gray-100/80 transition-colors duration-150";
+
+  if (resourceId != null && resourceId !== '') {
+    return (
+      <a
+        href={`/resources/${resourceId}`}
+        className={className}
+        style={{ cursor: 'pointer', textDecoration: 'none' }}
+      >
+        {content}
+      </a>
+    );
+  }
 
   if (url) {
     return (

@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// Base URL: exactly ${VITE_API_URL}/api so every request (login, revenue, employees) has /api once — avoids 404s
+// baseURL = ${VITE_API_URL}/api exactly once — all calls (login and data) use correct /api prefix
 const raw = import.meta.env.VITE_API_URL ?? ''
 const baseURL = raw.trim() ? `${String(raw).replace(/\/+$/, '')}/api` : '/api'
 
@@ -9,7 +9,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000, // 2 minutes for large PDF/Excel processing
+  timeout: 60000, // 60s — slow database wake-ups don't crash initial login
 })
 
 // Dashboard API functions
