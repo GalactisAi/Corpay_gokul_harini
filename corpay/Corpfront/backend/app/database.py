@@ -19,15 +19,20 @@ _MAX_DB_RETRIES = 2  # max 2 retries = 3 total attempts
 
 
 def _pg_engine(url: str):
-    """PostgreSQL engine for Supabase Pro. Larger pool to avoid QueuePool limit reached errors."""
+    """PostgreSQL engine for Supabase Pro. Use pooler port 6543; transaction mode, small pool."""
+    url = url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
     return create_engine(
         url,
-        pool_size=20,
-        max_overflow=10,
+        pool_size=5,
+        max_overflow=5,
         pool_timeout=30,
         pool_recycle=300,
         pool_pre_ping=True,
-        connect_args={"sslmode": "require", "connect_timeout": 10},
+        connect_args={
+            "sslmode": "require",
+            "connect_timeout": 10,
+            "options": "-c statement_timeout=30000",
+        },
     )
 
 
