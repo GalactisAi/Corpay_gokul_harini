@@ -551,8 +551,8 @@ export default function App() {
                 if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
                   avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
-                  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
-                  avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
+                  const base = (await import('./services/api')).apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
+                  avatarUrl = `${String(base).replace(/\/+$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
                 }
               }
             }
@@ -925,8 +925,8 @@ export default function App() {
                 if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
                   avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
-                  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
-                  avatarUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
+                  const base = (await import('./services/api')).apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
+                  avatarUrl = `${String(base).replace(/\/+$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
                 }
               }
             }
@@ -1186,10 +1186,9 @@ export default function App() {
           source={slideshowSource}
           intervalSeconds={slideshowState.interval_seconds ?? 5}
           onClose={async () => {
-            // When slideshow is closed from frontend, stop it on backend
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
             try {
-              await axios.post(`${API_BASE_URL}/api/admin/slideshow/stop-dev`);
+              const { apiBaseURL } = await import('./services/api');
+              await axios.post(`${apiBaseURL}/admin/slideshow/stop-dev`);
             } catch (error) {
               console.error('Failed to stop slideshow from frontend:', error);
             }

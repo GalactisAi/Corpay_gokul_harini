@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     supabase_url: str = os.getenv("SUPABASE_URL", "")
     supabase_service_key: str = os.getenv("SUPABASE_SERVICE_KEY", "")
     supabase_storage_bucket: str = os.getenv("SUPABASE_STORAGE_BUCKET", "slides")
+    supabase_uploads_bucket: str = os.getenv("SUPABASE_UPLOADS_BUCKET", "uploads")
     
     # JWT
     jwt_secret_key: str = "your-secret-key-here-change-in-production"

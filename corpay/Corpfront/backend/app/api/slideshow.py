@@ -6,7 +6,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 from app.database import get_db
 from app.utils.auth import get_current_admin_user
-from app.utils.file_handler import save_uploaded_file, get_file_size_mb, delete_file
+from app.utils.file_handler import save_uploaded_file, get_file_size_mb, delete_file, get_storage_public_url, get_local_path_or_download
 from app.models.user import User
 from app.models.file_upload import FileUpload, FileType
 from app.models.api_config import ApiConfig
@@ -149,11 +149,12 @@ def _load_slideshow_file_from_db(db: Session) -> None:
         # Fallback: last slideshow file from FileUpload table
         last_upload = db.query(FileUpload).filter(FileUpload.file_type == FileType.SLIDESHOW).order_by(FileUpload.created_at.desc()).first()
         if last_upload and (last_upload.storage_url or last_upload.stored_path):
-            file_url = last_upload.storage_url or (f"{os.getenv('API_BASE_URL', 'http://localhost:8002').rstrip('/')}/uploads/{last_upload.stored_path}")
+            file_url = last_upload.storage_url or get_storage_public_url(last_upload.stored_path, os.getenv("API_BASE_URL", "http://localhost:8002"))
             _slideshow_state["type"] = "file"
             _slideshow_state["source"] = file_url
             _slideshow_state["file_url"] = file_url
             _slideshow_state["file_name"] = last_upload.original_filename or "slideshow"
+            _slideshow_state["stored_path"] = last_upload.stored_path
 
 
 @router.post("/admin/slideshow/upload-dev")
@@ -165,17 +166,17 @@ async def upload_ppt_file_dev(
     if not file.filename or not file.filename.lower().endswith(('.pptx', '.ppt', '.pdf')):
         raise HTTPException(status_code=400, detail="File must be PowerPoint (.pptx, .ppt) or PDF (.pdf)")
     
-    # Save file
-    file_path = save_uploaded_file(file, "slideshow")
-    file_size = get_file_size_mb(file_path)
+    # Save file (Supabase or local)
+    stored_path, _ = save_uploaded_file(file, "slideshow")
+    file_size = get_file_size_mb(stored_path)
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
-    file_url = f"{API_BASE_URL}/uploads/{file_path}"
+    file_url = get_storage_public_url(stored_path, API_BASE_URL)
     
     # Record upload with storage_url for DB persistence
     try:
         file_upload = FileUpload(
             original_filename=file.filename,
-            stored_path=file_path,
+            stored_path=stored_path,
             storage_url=file_url,
             file_type=FileType.SLIDESHOW,
             file_size=int(file_size * 1024 * 1024),
@@ -191,6 +192,7 @@ async def upload_ppt_file_dev(
     _slideshow_state["source"] = file_url
     _slideshow_state["file_url"] = file_url
     _slideshow_state["file_name"] = file.filename
+    _slideshow_state["stored_path"] = stored_path
     # Persist to DB so it survives refresh/restart
     _set_config_value(db, "slideshow_file_url", file_url)
     _set_config_value(db, "slideshow_file_name", file.filename)
@@ -201,7 +203,7 @@ async def upload_ppt_file_dev(
         "message": "File uploaded successfully",
         "file_url": file_url,
         "file_name": file.filename,
-        "file_path": file_path
+        "file_path": stored_path
     }
 
 
@@ -215,17 +217,17 @@ async def upload_ppt_file(
     if not file.filename or not file.filename.lower().endswith(('.pptx', '.ppt', '.pdf')):
         raise HTTPException(status_code=400, detail="File must be PowerPoint (.pptx, .ppt) or PDF (.pdf)")
     
-    # Save file
-    file_path = save_uploaded_file(file, "slideshow")
-    file_size = get_file_size_mb(file_path)
+    # Save file (Supabase or local)
+    stored_path, _ = save_uploaded_file(file, "slideshow")
+    file_size = get_file_size_mb(stored_path)
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8002")
-    file_url = f"{API_BASE_URL}/uploads/{file_path}"
+    file_url = get_storage_public_url(stored_path, API_BASE_URL)
     
     # Record upload with storage_url for DB persistence
     try:
         file_upload = FileUpload(
             original_filename=file.filename,
-            stored_path=file_path,
+            stored_path=stored_path,
             storage_url=file_url,
             file_type=FileType.SLIDESHOW,
             file_size=int(file_size * 1024 * 1024),
@@ -241,6 +243,7 @@ async def upload_ppt_file(
     _slideshow_state["source"] = file_url
     _slideshow_state["file_url"] = file_url
     _slideshow_state["file_name"] = file.filename
+    _slideshow_state["stored_path"] = stored_path
     # Persist to DB so it survives refresh/restart
     _set_config_value(db, "slideshow_file_url", file_url)
     _set_config_value(db, "slideshow_file_name", file.filename)
@@ -251,7 +254,7 @@ async def upload_ppt_file(
         "message": "File uploaded successfully",
         "file_url": file_url,
         "file_name": file.filename,
-        "file_path": file_path
+        "file_path": stored_path
     }
 
 
@@ -462,15 +465,18 @@ async def get_slide_images(db: Session = Depends(get_db)):
     if not _slideshow_state["file_url"]:
         raise HTTPException(status_code=404, detail="No presentation file uploaded")
     
-    # Extract path after /uploads/ so it works regardless of host/port used when file was uploaded
-    file_url_raw = _slideshow_state["file_url"] or ""
-    if "/uploads/" in file_url_raw:
-        file_path = file_url_raw.split("/uploads/", 1)[1].lstrip("/")
+    # Resolve local path: use stored_path from DB (works with Supabase or local) or fallback to URL-derived path
+    stored_path = _slideshow_state.get("stored_path")
+    if stored_path:
+        full_file_path = Path(get_local_path_or_download(stored_path))
     else:
-        file_path = file_url_raw.replace("http://localhost:8000/uploads/", "").replace("http://localhost:8002/uploads/", "").lstrip("/")
-    upload_dir = Path(settings.upload_dir)
-    full_file_path = upload_dir / file_path
-    
+        file_url_raw = _slideshow_state["file_url"] or ""
+        if "/uploads/" in file_url_raw:
+            file_path = file_url_raw.split("/uploads/", 1)[1].lstrip("/")
+        else:
+            file_path = file_url_raw.replace("http://localhost:8000/uploads/", "").replace("http://localhost:8002/uploads/", "").lstrip("/")
+        upload_dir = Path(settings.upload_dir)
+        full_file_path = upload_dir / file_path
     if not full_file_path.exists():
         raise HTTPException(status_code=404, detail="Presentation file not found")
     

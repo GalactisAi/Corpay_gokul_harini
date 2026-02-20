@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Trash2, RefreshCw, Globe, Linkedin, X } from 'lucide-react';
 import axios from 'axios';
+import { getBaseURL } from '@/app/services/api';
 
 interface Post {
   id: string;
@@ -28,10 +29,10 @@ export function PostsPage() {
   const loadPostsFromAPI = async () => {
     setIsLoadingPosts(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+      const API_BASE = getBaseURL();
       const [corpayRes, crossBorderRes] = await Promise.allSettled([
-        axios.get(`${API_BASE_URL}/api/dashboard/posts`, { params: { limit: 50 } }),
-        axios.get(`${API_BASE_URL}/api/dashboard/cross-border-posts`, { params: { limit: 50 } })
+        axios.get(`${API_BASE}/dashboard/posts`, { params: { limit: 50 } }),
+        axios.get(`${API_BASE}/dashboard/cross-border-posts`, { params: { limit: 50 } })
       ]);
 
       const allPosts: Post[] = [];
@@ -79,15 +80,13 @@ export function PostsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+    const API_BASE = getBaseURL();
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-    // Ensure numeric id for backend (backend expects integer path param)
     const postId = String(id).trim();
     if (!postId) return;
     try {
-      // Use no-auth dev endpoint first so delete works without login
       const res = await axios.delete(
-        `${API_BASE_URL}/api/admin/posts/${postId}/dev`,
+        `${API_BASE}/admin/posts/${postId}/dev`,
         { timeout: 120000, validateStatus: () => true }
       );
       if (res.status === 200 || res.status === 204) {
@@ -100,10 +99,9 @@ export function PostsPage() {
         toast.success('Post removed');
         return;
       }
-      // Fallback to auth endpoint only on 401/403
       if ((res.status === 401 || res.status === 403) && token) {
         const authRes = await axios.delete(
-          `${API_BASE_URL}/api/admin/posts/${postId}`,
+          `${API_BASE}/admin/posts/${postId}`,
           { headers: { Authorization: `Bearer ${token}` }, timeout: 120000 }
         );
         if (authRes.status === 200 || authRes.status === 204) {
@@ -282,16 +280,15 @@ export function PostsPage() {
                   }
 
                   try {
-                    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+                    const API_BASE = getBaseURL();
                     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
                     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
                     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                    // Use no-auth dev endpoint so manual post works without login; fallback to auth endpoint if dev returns 404
                     const promises = validUrls.map(async (url) => {
                       try {
                         const res = await axios.post(
-                          `${API_BASE_URL}/api/admin/posts/from-url-dev`,
+                          `${API_BASE}/admin/posts/from-url-dev`,
                           { post_url: url.trim(), post_type: 'corpay' },
                           { headers: { 'Content-Type': 'application/json' }, timeout: 120000 }
                         );
@@ -299,7 +296,7 @@ export function PostsPage() {
                       } catch (devError: any) {
                         if (devError.response?.status === 404) {
                           return await axios.post(
-                            `${API_BASE_URL}/api/admin/posts/from-url`,
+                            `${API_BASE}/admin/posts/from-url`,
                             { post_url: url.trim(), post_type: 'corpay' },
                             { headers, timeout: 120000 }
                           );
@@ -461,16 +458,15 @@ export function PostsPage() {
                   }
 
                   try {
-                    const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+                    const API_BASE = getBaseURL();
                     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
                     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
                     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-                    // Use no-auth dev endpoint so manual post works without login; fallback to auth endpoint if dev returns 404
                     const promises = validUrls.map(async (url) => {
                       try {
                         const res = await axios.post(
-                          `${API_BASE_URL}/api/admin/posts/from-url-dev`,
+                          `${API_BASE}/admin/posts/from-url-dev`,
                           { post_url: url.trim(), post_type: 'cross_border' },
                           { headers: { 'Content-Type': 'application/json' }, timeout: 120000 }
                         );
@@ -478,7 +474,7 @@ export function PostsPage() {
                       } catch (devError: any) {
                         if (devError.response?.status === 404) {
                           return await axios.post(
-                            `${API_BASE_URL}/api/admin/posts/from-url`,
+                            `${API_BASE}/admin/posts/from-url`,
                             { post_url: url.trim(), post_type: 'cross_border' },
                             { headers, timeout: 120000 }
                           );

@@ -23,12 +23,12 @@ async def upload_payments_file(
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="File must be Excel format")
     
-    file_path = save_uploaded_file(file, "payments")
-    file_size = get_file_size_mb(file_path)
+    stored_path, local_path = save_uploaded_file(file, "payments")
+    file_size = get_file_size_mb(stored_path)
     
     file_upload = FileUpload(
         original_filename=file.filename,
-        stored_path=file_path,
+        stored_path=stored_path,
         file_type=FileType.PAYMENTS,
         file_size=int(file_size * 1024 * 1024),
         uploaded_by=current_user.email
@@ -37,7 +37,8 @@ async def upload_payments_file(
     
     try:
         parser = ExcelParser()
-        data = parser.parse_payments_file(f"uploads/{file_path}")
+        parse_path = local_path if local_path else f"uploads/{stored_path}"
+        data = parser.parse_payments_file(parse_path)
         
         # Check if payment data for this date already exists
         existing = db.query(PaymentData).filter(PaymentData.date == data["date"]).first()

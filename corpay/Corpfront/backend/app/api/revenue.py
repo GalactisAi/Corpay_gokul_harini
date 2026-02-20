@@ -10,7 +10,7 @@ from app.models.file_upload import FileUpload, FileType
 from app.models.api_config import ApiConfig
 from app.schemas.revenue import RevenueResponse, RevenueTrendResponse, RevenueProportionResponse, SharePriceResponse
 from app.utils.auth import get_current_admin_user
-from app.utils.file_handler import save_uploaded_file, get_file_size_mb, delete_file
+from app.utils.file_handler import save_uploaded_file, get_file_size_mb, delete_file, get_storage_public_url
 from app.services.excel_parser import ExcelParser
 from app.models.user import User
 from pydantic import BaseModel
@@ -73,9 +73,10 @@ async def upload_revenue_file(
     db.add(file_upload)
     
     try:
-        # Parse Excel file
+        # Parse Excel file (use local temp path when Supabase stored)
         parser = ExcelParser()
-        data = parser.parse_revenue_file(f"uploads/{file_path}")
+        parse_path = local_path if local_path else f"uploads/{stored_path}"
+        data = parser.parse_revenue_file(parse_path)
         
         # Update revenue only when total_amount is valid (never NaN/inf) to avoid IntegrityError
         total_revenue = _valid_revenue_amount(data.get("total_revenue"))
@@ -168,16 +169,16 @@ async def upload_revenue_file_dev(
         if not file.filename.endswith(('.xlsx', '.xls')):
             raise HTTPException(status_code=400, detail="File must be Excel format (.xlsx or .xls)")
         
-        # Save file
-        file_path = save_uploaded_file(file, "revenue")
-        file_size = get_file_size_mb(file_path)
+        # Save file (Supabase or local)
+        stored_path, local_path = save_uploaded_file(file, "revenue")
+        file_size = get_file_size_mb(stored_path)
         api_base = os.getenv("API_BASE_URL", "http://localhost:8002")
-        storage_url = f"{api_base.rstrip('/')}/uploads/{file_path}"
+        storage_url = get_storage_public_url(stored_path, api_base)
 
         # Record upload with storage_url for DB persistence
         file_upload = FileUpload(
             original_filename=file.filename,
-            stored_path=file_path,
+            stored_path=stored_path,
             storage_url=storage_url,
             file_type=FileType.REVENUE,
             file_size=int(file_size * 1024 * 1024),
@@ -185,9 +186,10 @@ async def upload_revenue_file_dev(
         )
         db.add(file_upload)
 
-        # Parse Excel file
+        # Parse Excel file (use local temp path when Supabase stored)
         parser = ExcelParser()
-        data = parser.parse_revenue_file(f"uploads/{file_path}")
+        parse_path = local_path if local_path else f"uploads/{stored_path}"
+        data = parser.parse_revenue_file(parse_path)
 
         # Update revenue only when total_amount is valid (never NaN/inf) to avoid IntegrityError
         total_revenue = _valid_revenue_amount(data.get("total_revenue"))

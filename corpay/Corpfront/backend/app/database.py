@@ -14,16 +14,16 @@ DATABASE_URL = (settings.database_url or "").strip() or "sqlite:///./dashboard.d
 
 
 def _pg_engine(url: str):
-    """PostgreSQL engine with production-safe pool and SSL for Supabase/Railway."""
+    """PostgreSQL engine with production-safe pool and SSL for Supabase/Railway. Stops QueuePool limit errors."""
     return create_engine(
         url,
         connect_args={
             "sslmode": "require",  # Supabase requires SSL
         },
         pool_pre_ping=True,   # Test connections before use (fixes stale/closed SSL after idle)
-        pool_recycle=300,    # Recycle connections every 5 min (before server-side timeout)
-        pool_size=5,
-        max_overflow=10,
+        pool_recycle=300,
+        pool_size=15,
+        max_overflow=5,
         echo=False,
     )
 

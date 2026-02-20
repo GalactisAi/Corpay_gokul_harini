@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 /**
- * baseURL = ${VITE_API_URL}/api exactly once — login and data calls use correct /api prefix.
- * With proxy (no VITE_API_URL): '/api'
+ * Base URL with /api exactly once: ${VITE_API_URL}/api (or '/api' when no env).
+ * Use this for all API calls so the /api prefix is never missing or duplicated.
  */
-function getBaseURL(): string {
+export function getBaseURL(): string {
   const base = import.meta.env.VITE_API_URL;
   if (base != null && String(base).trim() !== '') {
     const trimmed = String(base).replace(/\/+$/, '');
@@ -20,6 +20,13 @@ export const api = axios.create({
   },
   timeout: 60000, // 60s — slow database wake-ups don't crash initial login
 });
+
+/** Origin only (no /api) for routes like /health that are mounted at root. */
+export function getOrigin(): string {
+  const base = import.meta.env.VITE_API_URL;
+  if (base != null && String(base).trim() !== '') return String(base).replace(/\/+$/, '');
+  return '';
+}
 
 // Request path should NOT start with / so we get baseURL + '/' + path (e.g. /api/admin/auth/login)
 export function apiPath(path: string): string {

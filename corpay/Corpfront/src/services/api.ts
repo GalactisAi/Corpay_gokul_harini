@@ -1,11 +1,11 @@
 import axios from 'axios'
 
-// baseURL = ${VITE_API_URL}/api exactly once — all calls (login and data) use correct /api prefix
+// baseURL = ${VITE_API_URL}/api exactly once — all calls use correct /api prefix (no duplicate/missing)
 const raw = import.meta.env.VITE_API_URL ?? ''
-const baseURL = raw.trim() ? `${String(raw).replace(/\/+$/, '')}/api` : '/api'
+export const apiBaseURL = raw.trim() ? `${String(raw).replace(/\/+$/, '')}/api` : '/api'
 
 export const api = axios.create({
-  baseURL,
+  baseURL: apiBaseURL,
   headers: {
     'Content-Type': 'application/json',
   },

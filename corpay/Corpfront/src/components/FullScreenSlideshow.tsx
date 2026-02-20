@@ -82,9 +82,8 @@ export function FullScreenSlideshow({ slideshowType, source, intervalSeconds = 5
       setLoadingSlow(false);
       console.log('[Slideshow] Loading slides from backend...');
 
-      // Use empty string so /api goes through Vite proxy to backend (avoids CORS)
-      const API_BASE = import.meta.env.VITE_API_URL || '';
-      const slidesUrl = API_BASE ? `${API_BASE}/api/dashboard/slideshow/slides` : '/api/dashboard/slideshow/slides';
+      const { apiBaseURL } = await import('../services/api');
+      const slidesUrl = `${apiBaseURL}/dashboard/slideshow/slides`;
       const response = await axios.get(slidesUrl, { timeout: 120000 });
       console.log('[Slideshow] Backend response:', response.data);
 

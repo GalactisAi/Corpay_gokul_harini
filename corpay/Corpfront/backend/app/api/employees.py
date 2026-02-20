@@ -6,7 +6,7 @@ from app.models.employees import EmployeeMilestone
 from app.models.file_upload import FileUpload, FileType
 from app.schemas.employees import EmployeeMilestoneCreate, EmployeeMilestoneUpdate, EmployeeMilestoneResponse
 from app.utils.auth import get_current_admin_user
-from app.utils.file_handler import save_uploaded_file, get_file_size_mb
+from app.utils.file_handler import save_uploaded_file, get_file_size_mb, get_storage_public_url
 from app.services.excel_parser import ExcelParser
 from app.models.user import User
 
@@ -112,12 +112,12 @@ async def upload_employee_file(
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="File must be Excel format")
     
-    file_path = save_uploaded_file(file, "employees")
-    file_size = get_file_size_mb(file_path)
+    stored_path, local_path = save_uploaded_file(file, "employees")
+    file_size = get_file_size_mb(stored_path)
     
     file_upload = FileUpload(
         original_filename=file.filename,
-        stored_path=file_path,
+        stored_path=stored_path,
         file_type=FileType.EMPLOYEE_DATA,
         file_size=int(file_size * 1024 * 1024),
         uploaded_by=current_user.email
@@ -126,7 +126,8 @@ async def upload_employee_file(
     
     try:
         parser = ExcelParser()
-        employees = parser.parse_employee_file(f"uploads/{file_path}")
+        parse_path = local_path if local_path else f"uploads/{stored_path}"
+        employees = parser.parse_employee_file(parse_path)
         
         for emp_data in employees:
             milestone = EmployeeMilestone(**emp_data)
@@ -153,16 +154,16 @@ async def upload_employee_photo_dev(
     if not file.content_type or not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    file_path = save_uploaded_file(file, "employee-photos")
+    stored_path, _ = save_uploaded_file(file, "employee-photos")
     
     # If employee_id is provided and > 0, update the milestone
     if employee_id > 0:
         milestone = db.query(EmployeeMilestone).filter(EmployeeMilestone.id == employee_id).first()
         if milestone:
-            milestone.avatar_path = file_path
+            milestone.avatar_path = stored_path
             db.commit()
     
-    return {"message": "Photo uploaded successfully", "avatar_path": file_path}
+    return {"message": "Photo uploaded successfully", "avatar_path": stored_path}
 
 
 @router.post("/upload-photo")
@@ -172,11 +173,11 @@ async def upload_employee_photo(
     current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
-    """Upload employee photo"""
+    """Upload employee photo (Supabase Storage or local)"""
     if not file.content_type or not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    file_path = save_uploaded_file(file, "employee-photos")
+    stored_path, _ = save_uploaded_file(file, "employee-photos")
     
     # If employee_id is provided and > 0, update the milestone
     if employee_id > 0:
@@ -186,16 +187,16 @@ async def upload_employee_photo(
         
         file_upload = FileUpload(
             original_filename=file.filename,
-            stored_path=file_path,
+            stored_path=stored_path,
             file_type=FileType.EMPLOYEE_PHOTO,
             uploaded_by=current_user.email
         )
         db.add(file_upload)
         
-        milestone.avatar_path = file_path
+        milestone.avatar_path = stored_path
         db.commit()
     
-    return {"message": "Photo uploaded successfully", "avatar_path": file_path}
+    return {"message": "Photo uploaded successfully", "avatar_path": stored_path}
 
 
 @router.delete("/dev/{milestone_id}")
