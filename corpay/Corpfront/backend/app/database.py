@@ -23,9 +23,9 @@ def _pg_engine(url: str):
     url = url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
     return create_engine(
         url,
-        pool_size=5,
-        max_overflow=5,
-        pool_timeout=30,
+        pool_size=10,
+        max_overflow=10,
+        pool_timeout=10,
         pool_recycle=300,
         pool_pre_ping=True,
         connect_args={
