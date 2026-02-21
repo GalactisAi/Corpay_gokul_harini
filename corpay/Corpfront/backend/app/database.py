@@ -25,11 +25,11 @@ def _pg_engine(url: str):
         url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     return create_engine(
         url,
-        pool_size=10,
-        max_overflow=10,
+        pool_size=5,          # reduced
+        max_overflow=5,       # reduced
         pool_timeout=10,
-        pool_recycle=60,
-        pool_pre_ping=True,
+        pool_recycle=1800,    # 30 mins (IMPORTANT FIX)
+        pool_pre_ping=True,  # auto-reconnect dead SSL connections
         connect_args={
             "sslmode": "require",
             "connect_timeout": 10,
