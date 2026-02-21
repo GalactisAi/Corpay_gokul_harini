@@ -1250,7 +1250,7 @@ export default function App() {
                 </p>
                 <div className="flex items-center gap-1">
                   <span style={{ color: '#0085C2', fontSize: '16px', fontWeight: 600 }}>
-                    {sharePrice.change_percentage >= 0 ? '▲' : '▼'} {sharePrice.change_percentage >= 0 ? '+' : ''}{sharePrice.change_percentage.toFixed(2)}%
+                    {Number(sharePrice.change_percentage) >= 0 ? '▲' : '▼'} {Number(sharePrice.change_percentage) >= 0 ? '+' : ''}{sharePrice.change_percentage.toFixed(2)}%
                   </span>
                 </div>
               </div>
