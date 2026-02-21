@@ -28,6 +28,7 @@ def _pg_engine(url: str):
         pool_timeout=10,
         pool_recycle=60,
         pool_pre_ping=True,
+        execution_options={"use_native_hstore": False},
         connect_args={
             "sslmode": "require",
             "connect_timeout": 10,

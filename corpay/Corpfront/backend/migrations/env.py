@@ -77,7 +77,12 @@ def run_migrations_online() -> None:
                 "keepalives_interval": 5,
                 "keepalives_count": 3,
             }
-        connectable = create_engine(url, poolclass=pool.NullPool, connect_args=connect_args)
+        connectable = create_engine(
+            url,
+            poolclass=pool.NullPool,
+            connect_args=connect_args,
+            execution_options={"use_native_hstore": False},
+        )
         try:
             with connectable.connect() as connection:
                 context.configure(connection=connection, target_metadata=target_metadata)
