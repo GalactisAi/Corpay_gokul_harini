@@ -4,10 +4,10 @@ interface ResourceCardProps {
   title: string;
   description: string;
   type: 'case-study' | 'whitepaper';
-  /** When set, card navigates to /resources/${resourceId} (fixes incorrect redirection) */
-  resourceId?: number | string | null;
-  /** Fallback external URL when resourceId is not set */
+  /** External URL to the official resource page; when set, card links here (opens in new tab). */
   url?: string;
+  /** When url is not set, card navigates to /resources/${resourceId} (internal route). */
+  resourceId?: number | string | null;
 }
 
 export function ResourceCard({ title, description, type, resourceId, url }: ResourceCardProps) {
@@ -30,10 +30,14 @@ export function ResourceCard({ title, description, type, resourceId, url }: Reso
 
   const className = "flex items-start gap-3 p-3 bg-gray-50/60 rounded-lg cursor-pointer hover:bg-gray-100/80 transition-colors duration-150";
 
-  if (resourceId != null && resourceId !== '') {
+  // Prefer official external URL when available so the resource opens on its real page
+  const externalUrl = (url && String(url).trim()) || undefined;
+  if (externalUrl) {
     return (
       <a
-        href={`/resources/${resourceId}`}
+        href={externalUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         className={className}
         style={{ cursor: 'pointer', textDecoration: 'none' }}
       >
@@ -42,12 +46,10 @@ export function ResourceCard({ title, description, type, resourceId, url }: Reso
     );
   }
 
-  if (url) {
+  if (resourceId != null && resourceId !== '') {
     return (
       <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={`/resources/${resourceId}`}
         className={className}
         style={{ cursor: 'pointer', textDecoration: 'none' }}
       >

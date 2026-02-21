@@ -93,177 +93,14 @@ const pieData = [
   { category: 'Lodging', percentage: 25, color: '#E6E8E7' },
 ];
 
-const linkedInPosts = [
-  {
-    author: 'Corpay',
-    timeAgo: '2 hours ago',
-    content: "We're excited to be named a leader in corporate payments for the 5th year in a row! Our team's dedication makes it all possible. #Fintech #Payments",
-    image: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGdyb3d0aCUyMGNoYXJ0fGVufDF8fHx8MTc2MzM3MTQ4MHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    likes: 0,
-    comments: 0
-  },
-  {
-    author: 'Corpay',
-    timeAgo: '1 day ago',
-    content: 'Join our upcoming webinar on the future of corporate payment solutions. Register now to secure your spot! Link in bio.',
-    image: undefined,
-    likes: 0,
-    comments: 0
-  },
-  {
-    author: 'Corpay',
-    timeAgo: '3 days ago',
-    content: 'Our latest case study with HealthFirst shows how they reduced processing costs by 30%. A huge win for efficiency! #Healthcare #Finance',
-    image: 'https://images.unsplash.com/photo-1755189118414-14c8dacdb082?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBkb2N0b3IlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    likes: 0,
-    comments: 0
-  },
-  {
-    author: 'Corpay',
-    timeAgo: '5 days ago',
-    content: 'Celebrating our partnership with industry leaders! Together, we\'re shaping the future of digital payments.',
-    image: undefined,
-    likes: 0,
-    comments: 0
-  },
-  {
-    author: 'Corpay',
-    timeAgo: '1 week ago',
-    content: 'Innovation in payment processing: Discover how we\'re revolutionizing fleet management and corporate card solutions.',
-    image: 'https://images.unsplash.com/photo-1707075891545-41b982930351?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaW50ZWNoJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    likes: 0,
-    comments: 0
-  },
-];
+// Fallback when resources API returns empty or fails
+const fallbackResources: Array<{ title: string; url: string; date?: string; category?: string; excerpt?: string }> = [];
 
-const crossBorderPosts = [
-  {
-    author: 'Corpay Cross-Border',
-    timeAgo: '30 minutes ago',
-    content: 'Corpay Cross-Border At a Glimpse (YTD Sept\'25) - Exceptional performance across all metrics! 🚀 $716M Revenue with 102% budget achievement, 2,476 Net New Customers, and 94% Core Retention. #CrossBorder #Growth',
-    image: crossBorderGlimpse,
-    likes: 342,
-    comments: 28
-  },
-  {
-    author: 'Corpay Cross-Border',
-    timeAgo: '1 hour ago',
-    content: 'Managing international payments just got easier! Our new platform features are designed to streamline your global transactions. #CrossBorder #FX',
-    image: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnbG9iYWwlMjBidXNpbmVzc3xlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    likes: 189,
-    comments: 15
-  },
-  {
-    author: 'Corpay Cross-Border',
-    timeAgo: '4 hours ago',
-    content: 'Currency markets update: How geopolitical events are shaping FX rates this week. Read our expert analysis.',
-    image: undefined,
-    likes: 156,
-    comments: 22
-  },
-  {
-    author: 'Corpay Cross-Border',
-    timeAgo: '2 days ago',
-    content: 'Success story: How a multinational retailer saved $2M annually with our cross-border payment solutions. #GlobalPayments',
-    image: 'https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXRhaWwlMjBzdG9yZXxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    likes: 421,
-    comments: 37
-  },
-  {
-    author: 'Corpay Cross-Border',
-    timeAgo: '4 days ago',
-    content: 'Webinar alert! Join us for "Navigating International Trade in 2025" - Expert insights on currency risk management.',
-    image: undefined,
-    likes: 267,
-    comments: 19
-  },
-  {
-    author: 'Corpay Cross-Border',
-    timeAgo: '6 days ago',
-    content: 'Expanding to new markets? Our comprehensive guide to cross-border payments can help you scale globally with confidence.',
-    image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b3JsZCUyMG1hcHxlbnwxfHx8fDE3NjM0MDUxOTV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    likes: 198,
-    comments: 14
-  },
-];
 
-// Fallback when resources/newsroom API fails or returns empty (8 items to match display count)
-const fallbackResources = [
-  { title: 'Case Study: Global Transport Inc.', excerpt: 'How we streamlined their fleet payments.', url: '' },
-  { title: 'Whitepaper: Digital Transformation', excerpt: 'Key strategies for enterprise success.', url: '' },
-  { title: 'Corpay Resources & Newsroom', excerpt: 'Latest articles and insights from Corpay.', url: '' },
-  { title: 'Guide: Commercial Card Best Practices', excerpt: 'Optimize spend and control with commercial cards.', url: '' },
-  { title: 'Case Study: Hospitality Payments', excerpt: 'Simplifying cross-border payments for hotels.', url: '' },
-  { title: 'Whitepaper: FX Risk Management', excerpt: 'Hedging strategies for treasury teams.', url: '' },
-  { title: 'Webinar: Digital Wallets & B2B', excerpt: 'Adoption trends and integration options.', url: '' },
-  { title: 'Blog: Treasury Automation', excerpt: 'From manual to automated reconciliation.', url: '' },
-];
 
-const employeeMilestones = [
-  {
-    name: "Sarah Chen's Work Anniversary",
-    description: "5 Years in Marketing",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    borderColor: "#BE1549",
-    backgroundColor: "#fff5f9"
-  },
-  {
-    name: "Michael Brown's Birthday",
-    description: "Happy Birthday!",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    borderColor: "#0085C2",
-    backgroundColor: "#f0f9fd"
-  },
-  {
-    name: "Emily White joins Engineering",
-    description: "Welcome to the team!",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-    borderColor: "#981239",
-    backgroundColor: "#fef5f8"
-  },
-  {
-    name: "David Martinez's Work Anniversary",
-    description: "10 Years in Finance",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-    borderColor: "#522239",
-    backgroundColor: "#f9f5f7"
-  },
-  {
-    name: "Jessica Taylor's Promotion",
-    description: "Promoted to Senior Manager",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
-    borderColor: "#981239",
-    backgroundColor: "#fef5f8"
-  },
-  {
-    name: "Robert Johnson joins Sales",
-    description: "Welcome aboard!",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-    borderColor: "#0085C2",
-    backgroundColor: "#f0f9fd"
-  },
-  {
-    name: "Amanda Lee's Birthday",
-    description: "Happy Birthday!",
-    avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=100&h=100&fit=crop",
-    borderColor: "#BE1549",
-    backgroundColor: "#fff5f9"
-  },
-  {
-    name: "James Wilson's Birthday",
-    description: "Happy Birthday!",
-    avatar: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop",
-    borderColor: "#981239",
-    backgroundColor: "#fef5f8"
-  },
-  {
-    name: "Sophia Martinez's Birthday",
-    description: "Happy Birthday!",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop",
-    borderColor: "#522239",
-    backgroundColor: "#f9f5f7"
-  },
-];
+
+
+
 
 export default function App() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -281,8 +118,8 @@ export default function App() {
   const [sharePrice, setSharePrice] = useState({ price: 0, change_percentage: 0 });
   const [revenueTrends, setRevenueTrends] = useState(revenueData);
   const [revenueProportions, setRevenueProportions] = useState(pieData);
-  const [posts, setPosts] = useState(linkedInPosts);
-  const [crossBorderPostsList, setCrossBorderPostsList] = useState(crossBorderPosts);
+  const [posts, setPosts] = useState<Array<{ author: string; timeAgo: string; content: string; image?: string; likes?: number; comments?: number; postUrl?: string }>>([]);
+  const [crossBorderPostsList, setCrossBorderPostsList] = useState<Array<{ author: string; timeAgo: string; content: string; image?: string; likes?: number; comments?: number; postUrl?: string }>>([]);
   const [milestonesList, setMilestonesList] = useState<Array<{
     name: string;
     description: string;
@@ -1062,10 +899,11 @@ export default function App() {
       }
     }, 40);
 
-    // Add new posts periodically
+    // Add new posts periodically (pick from current list if any)
     addPostInterval = setInterval(() => {
       setPosts(prev => {
-        const newPost = linkedInPosts[Math.floor(Math.random() * linkedInPosts.length)];
+        if (prev.length === 0) return prev;
+        const newPost = prev[Math.floor(Math.random() * prev.length)];
         return [...prev, { ...newPost, timeAgo: 'Just now' }];
       });
     }, 5000);
@@ -1092,10 +930,11 @@ export default function App() {
       }
     }, 40);
 
-    // Add new posts periodically
+    // Add new posts periodically (pick from current list if any)
     addPostInterval = setInterval(() => {
       setCrossBorderPostsList(prev => {
-        const newPost = crossBorderPosts[Math.floor(Math.random() * crossBorderPosts.length)];
+        if (prev.length === 0) return prev;
+        const newPost = prev[Math.floor(Math.random() * prev.length)];
         return [...prev, { ...newPost, timeAgo: 'Just now' }];
       });
     }, 5000);
@@ -1492,11 +1331,11 @@ export default function App() {
                 >
                   {(Array.isArray(resourceItems) && resourceItems.length > 0 ? resourceItems.slice(0, 8) : fallbackResources).map((item, index) => (
                     <ResourceCard
-                      key={'id' in item && item.id != null ? item.id : index}
+                      key={'id' in item && item.id != null ? String(item.id) : index}
                       title={item.title || 'Resource'}
                       description={item.excerpt || ''}
                       type={index % 2 === 0 ? 'case-study' : 'whitepaper'}
-                      resourceId={'id' in item ? item.id : undefined}
+                      resourceId={'id' in item && typeof (item as { id?: unknown }).id !== 'undefined' ? (item as { id: number }).id : undefined}
                       url={item.url || undefined}
                     />
                   ))}

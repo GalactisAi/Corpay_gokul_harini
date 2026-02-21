@@ -49,7 +49,7 @@ export default defineConfig({
       // Proxy Unsplash to avoid ERR_CERT_AUTHORITY_INVALID when using HTTPS localhost or strict SSL
       proxy: {
         '/api': {
-          target: 'http://localhost:8002',
+          target: 'http://localhost:8080',
           changeOrigin: true,
         },
         '/unsplash': {
