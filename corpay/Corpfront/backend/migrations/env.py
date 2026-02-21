@@ -64,6 +64,8 @@ def run_migrations_online() -> None:
     """
     url = settings.database_url or "sqlite:///./dashboard.db"
     print(f"DEBUG: Using database URL: {settings.database_url or 'sqlite:///./dashboard.db (fallback)'}")
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
     max_attempts = 5
     for attempt in range(1, max_attempts + 1):

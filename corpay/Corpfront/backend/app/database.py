@@ -19,8 +19,10 @@ _MAX_DB_RETRIES = 2  # max 2 retries = 3 total attempts
 
 
 def _pg_engine(url: str):
-    """PostgreSQL engine for Supabase Pro. Use pooler port 6543; transaction mode, small pool."""
     url = url.replace("pooler.supabase.com:5432", "pooler.supabase.com:6543")
+    # Ensure psycopg2 driver is explicit
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     return create_engine(
         url,
         pool_size=10,
@@ -28,7 +30,6 @@ def _pg_engine(url: str):
         pool_timeout=10,
         pool_recycle=60,
         pool_pre_ping=True,
-        execution_options={"use_native_hstore": False},
         connect_args={
             "sslmode": "require",
             "connect_timeout": 10,
@@ -37,6 +38,7 @@ def _pg_engine(url: str):
             "keepalives_idle": 30,
             "keepalives_interval": 5,
             "keepalives_count": 3,
+            "application_name": "corpay_dashboard",
         },
     )
 
