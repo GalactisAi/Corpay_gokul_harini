@@ -104,18 +104,16 @@ try:
 except Exception as e:
     print(f"Warning: Could not mount static files: {e}")
 
-# CORS middleware: allow Railway/frontend origins; allow_methods=["*"] for OPTIONS preflight (avoids 400)
-_origins = list(settings.cors_origins)
-_extra = (os.getenv("CORS_ORIGINS_EXTRA") or "").strip()
-if _extra:
-    _origins.extend(o.strip() for o in _extra.split(",") if o.strip())
-if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
-    _railway_origin = f"https://{os.getenv('RAILWAY_PUBLIC_DOMAIN')}"
-    if _railway_origin not in _origins:
-        _origins.append(_railway_origin)
+# CORS middleware: allow Vercel frontend and admin dashboard origins
+origins = [
+    "https://corpayfrontend.vercel.app",
+    "https://corpayadmindashboard.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
