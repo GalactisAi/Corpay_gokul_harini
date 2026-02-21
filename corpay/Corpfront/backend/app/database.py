@@ -5,6 +5,7 @@ Tuned for Supabase Pro: larger pool and overflow to avoid QueuePool limit errors
 """
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, Query
 from typing import Generator
@@ -25,11 +26,8 @@ def _pg_engine(url: str):
         url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
     return create_engine(
         url,
-        pool_size=5,          # reduced
-        max_overflow=5,       # reduced
-        pool_timeout=10,
-        pool_recycle=1800,    # 30 mins (IMPORTANT FIX)
-        pool_pre_ping=True,  # auto-reconnect dead SSL connections
+        poolclass=NullPool,   # Disable SQLAlchemy pooling (Supabase pooler handles it)
+        pool_pre_ping=True,
         connect_args={
             "sslmode": "require",
             "connect_timeout": 10,
