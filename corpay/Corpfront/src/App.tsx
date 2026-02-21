@@ -1250,7 +1250,10 @@ export default function App() {
                 </p>
                 <div className="flex items-center gap-1">
                   <span style={{ color: '#0085C2', fontSize: '16px', fontWeight: 600 }}>
-                    {Number(sharePrice.change_percentage) >= 0 ? '▲' : '▼'} {Number(sharePrice.change_percentage) >= 0 ? '+' : ''}{sharePrice.change_percentage.toFixed(2)}%
+                    {(() => {
+                      const change = parseFloat(String(sharePrice.change_percentage || 0));
+                      return change >= 0 ? '▲' : '▼';
+                    })()} {sharePrice.change_percentage >= 0 ? '+' : ''}{sharePrice.change_percentage.toFixed(2)}%
                   </span>
                 </div>
               </div>
