@@ -82,22 +82,17 @@ export function SwitchScreenPage() {
 
   // Load persisted slideshow file from backend on mount (so it survives refresh)
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
-    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-    const loadCurrent = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/api/dashboard/slideshow`, { timeout: 120000 });
-        if (res.data?.file_url && res.data?.type === 'file') {
-          setUploadedPptUrl(res.data.file_url);
-          setUploadedFileName(res.data.file_name || null);
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    fetch(`${API_BASE_URL}/api/dashboard/slideshow`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.file_url && data.file_name) {
+          setUploadedFileName(data.file_name);
+          setUploadedPptUrl(data.file_url);
         }
-      } catch {
-        // No file or API down
-      } finally {
-        setLoadingCurrentFile(false);
-      }
-    };
-    loadCurrent();
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCurrentFile(false));
   }, []);
 
   // Persist when user changes source type, embed URL, or interval (device-specific)

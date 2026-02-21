@@ -56,15 +56,15 @@ async def upload_revenue_file(
         raise HTTPException(status_code=400, detail="File must be Excel format (.xlsx or .xls)")
     
     # Save file
-    file_path = save_uploaded_file(file, "revenue")
-    file_size = get_file_size_mb(file_path)
+    stored_path, local_path = save_uploaded_file(file, "revenue")
+    file_size = get_file_size_mb(stored_path)
     api_base = os.getenv("API_BASE_URL", "http://localhost:8080")
-    storage_url = f"{api_base.rstrip('/')}/uploads/{file_path}"
+    storage_url = f"{api_base.rstrip('/')}/uploads/{stored_path}"
     
     # Record upload with storage_url for DB persistence
     file_upload = FileUpload(
         original_filename=file.filename,
-        stored_path=file_path,
+        stored_path=stored_path,
         storage_url=storage_url,
         file_type=FileType.REVENUE,
         file_size=int(file_size * 1024 * 1024),
@@ -137,7 +137,7 @@ async def upload_revenue_file(
         # Persist current revenue file so it survives refresh (Trend data from this file)
         _set_config_value(db, "revenue_trend_file_id", str(file_upload.id))
         _set_config_value(db, "revenue_trend_file_name", file.filename)
-        _set_config_value(db, "revenue_trend_file_path", file_path)
+        _set_config_value(db, "revenue_trend_file_path", stored_path)
         return {"message": "File processed successfully", "file_id": file_upload.id}
     
     except Exception as e:
@@ -250,7 +250,7 @@ async def upload_revenue_file_dev(
         # Persist current revenue file so it survives refresh (Trend data from this file)
         _set_config_value(db, "revenue_trend_file_id", str(file_upload.id))
         _set_config_value(db, "revenue_trend_file_name", file.filename)
-        _set_config_value(db, "revenue_trend_file_path", file_path)
+        _set_config_value(db, "revenue_trend_file_path", stored_path)
 
         try:
             with open("/Users/madhujitharumugam/Desktop/latest_corpgit/corpay/.cursor/debug.log", "a") as f:
