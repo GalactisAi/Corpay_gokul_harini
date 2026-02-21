@@ -26,7 +26,7 @@ def _pg_engine(url: str):
         pool_size=10,
         max_overflow=10,
         pool_timeout=10,
-        pool_recycle=300,
+        pool_recycle=60,
         pool_pre_ping=True,
         connect_args={
             "sslmode": "require",
