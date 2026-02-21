@@ -51,8 +51,12 @@ def _sqlite_engine(url: str):
 
 if DATABASE_URL.startswith("postgresql"):
     engine = _pg_engine(DATABASE_URL)
-    with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        print(f"WARNING: Startup DB connectivity check failed: {e}")
+        print("App will continue - pool will reconnect on first request")
 else:
     engine = _sqlite_engine(DATABASE_URL)
 
