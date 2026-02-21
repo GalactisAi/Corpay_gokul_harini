@@ -1225,7 +1225,7 @@ export default function App() {
                   <div className="text-center space-y-2 flex-1">
                     <p className="text-gray-500" style={{ fontSize: '11px', fontWeight: 500 }}>{cardTitles.paymentsAmountSubtitle}</p>
                     <p style={{ fontWeight: 700, color: 'rgb(152, 18, 57)', fontSize: '32px', lineHeight: '1' }}>
-                      ₹{(payments.amount_processed / 10000000).toFixed(1)} Cr
+                      {(payments.amount_processed / 10000000).toFixed(1)} Cr
                     </p>
                   </div>
 
@@ -1253,7 +1253,7 @@ export default function App() {
                   <div className="text-center space-y-2 flex-1">
                     <p className="text-gray-500" style={{ fontSize: '11px', fontWeight: 500 }}>System Uptime</p>
                     <p style={{ fontWeight: 700, color: '#230C18', fontSize: '32px', lineHeight: '1' }}>
-                      {systemPerformance.uptime_percentage.toFixed(3)}%
+                      {systemPerformance.uptime_percentage.toFixed(3)}
                     </p>
                   </div>
 
@@ -1264,7 +1264,7 @@ export default function App() {
                   <div className="text-center space-y-2 flex-1">
                     <p className="text-gray-500" style={{ fontSize: '11px', fontWeight: 500 }}>Success Rate</p>
                     <p style={{ fontWeight: 700, color: '#981239', fontSize: '32px', lineHeight: '1' }}>
-                      {systemPerformance.success_rate.toFixed(2)}%
+                      {systemPerformance.success_rate.toFixed(2)}
                     </p>
                   </div>
                 </div>

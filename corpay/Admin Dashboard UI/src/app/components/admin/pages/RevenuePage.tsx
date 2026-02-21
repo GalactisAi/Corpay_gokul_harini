@@ -1048,7 +1048,7 @@ export function RevenuePage() {
         throw authError;
       }
 
-      toast.success('Payment data saved successfully');
+      toast.success('Customizable card 1 updated');
       await saveCardTitlesToBackend();
       setManualPaymentAmount('');
       setManualPaymentTransactions('');
@@ -1107,7 +1107,7 @@ export function RevenuePage() {
         throw authError;
       }
 
-      toast.success('System performance data saved successfully');
+      toast.success('Customizable card 2 updated');
       setManualUptime('');
       setManualSuccessRate('');
       setIsSavingSystem(false);
