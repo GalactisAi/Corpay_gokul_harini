@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError
 from typing import Optional, List, Literal
 from datetime import datetime
+import time
 from urllib.parse import urlparse
 from app.database import get_db
 from app.utils.auth import get_current_admin_user
@@ -114,10 +116,24 @@ _slideshow_state = {
 
 SLIDESHOW_KEYS = ("slideshow_file_url", "slideshow_file_name", "slideshow_type", "slideshow_embed_url")
 
+# In-memory cache for slideshow config to avoid hammering DB on every poll (30s TTL)
+_config_cache: dict[str, Optional[str]] = {}
+_config_cache_time: dict[str, float] = {}
+_CONFIG_CACHE_TTL = 30
+
 
 def _get_config_value(db: Session, key: str) -> Optional[str]:
-    row = db.query(ApiConfig).filter(ApiConfig.config_key == key, ApiConfig.is_active == 1).first()
-    return (row.config_value or "").strip() or None if row else None
+    now = time.time()
+    if key in _config_cache and key in _config_cache_time and (now - _config_cache_time[key]) < _CONFIG_CACHE_TTL:
+        return _config_cache[key]
+    try:
+        row = db.query(ApiConfig).filter(ApiConfig.config_key == key, ApiConfig.is_active == 1).first()
+        value = (row.config_value or "").strip() or None if row else None
+        _config_cache[key] = value
+        _config_cache_time[key] = now
+        return value
+    except OperationalError:
+        return None
 
 
 def _set_config_value(db: Session, key: str, value: Optional[str]) -> None:
