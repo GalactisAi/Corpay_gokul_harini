@@ -3,6 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
+import time
 from logging.config import fileConfig
 
 from sqlalchemy import create_engine
@@ -63,22 +64,32 @@ def run_migrations_online() -> None:
     """
     url = settings.database_url or "sqlite:///./dashboard.db"
     print(f"DEBUG: Using database URL: {settings.database_url or 'sqlite:///./dashboard.db (fallback)'}")
-    connect_args = {}
-    if url and url.startswith("postgresql"):
-        connect_args["sslmode"] = "require"
-    connectable = create_engine(
-        url,
-        poolclass=pool.NullPool,
-        connect_args=connect_args if connect_args else {},
-    )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        connect_args = {}
+        if url.startswith("postgresql"):
+            connect_args = {
+                "sslmode": "require",
+                "connect_timeout": 15,
+                "keepalives": 1,
+                "keepalives_idle": 30,
+                "keepalives_interval": 5,
+                "keepalives_count": 3,
+            }
+        connectable = create_engine(url, poolclass=pool.NullPool, connect_args=connect_args)
+        try:
+            with connectable.connect() as connection:
+                context.configure(connection=connection, target_metadata=target_metadata)
+                with context.begin_transaction():
+                    context.run_migrations()
+            break
+        except Exception as e:
+            connectable.dispose()
+            if attempt == max_attempts:
+                raise
+            print(f"Migration attempt {attempt} failed: {e}. Retrying in 10s...")
+            time.sleep(10)
 
 
 if context.is_offline_mode():
