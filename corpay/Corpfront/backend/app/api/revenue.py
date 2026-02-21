@@ -58,7 +58,7 @@ async def upload_revenue_file(
     # Save file
     file_path = save_uploaded_file(file, "revenue")
     file_size = get_file_size_mb(file_path)
-    api_base = os.getenv("API_BASE_URL", "http://localhost:8002")
+    api_base = os.getenv("API_BASE_URL", "http://localhost:8080")
     storage_url = f"{api_base.rstrip('/')}/uploads/{file_path}"
     
     # Record upload with storage_url for DB persistence
@@ -172,7 +172,7 @@ async def upload_revenue_file_dev(
         # Save file (Supabase or local)
         stored_path, local_path = save_uploaded_file(file, "revenue")
         file_size = get_file_size_mb(stored_path)
-        api_base = os.getenv("API_BASE_URL", "http://localhost:8002")
+        api_base = os.getenv("API_BASE_URL", "http://localhost:8080")
         storage_url = get_storage_public_url(stored_path, api_base)
 
         # Record upload with storage_url for DB persistence

@@ -27,7 +27,7 @@ from app.utils.cache import get, set
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
-_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+_API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8080")
 
 
 def _normalize_post_image_url(url: Optional[str]) -> Optional[str]:
@@ -416,17 +416,17 @@ async def get_newsroom_items(limit: int = 12) -> List[NewsroomItemResponse]:
 @router.get("/resources-newsroom", response_model=List[NewsroomItemResponse])
 async def get_resources_newsroom_items(limit: int = 4) -> List[NewsroomItemResponse]:
     """
-    Get latest items from the Corpay Resources → Newsroom page.
+    Get latest items from the Corpay Resources → Newsroom page via web scraping.
 
     Source: `https://www.corpay.com/resources/newsroom?page=2`
-    Returns up to `limit` items, text-only (no images).
-    Cached for 5 minutes to avoid slow external fetches on every request.
+    Returns up to `limit` items with official url for each. No fallback list.
+    When scraper returns empty, returns previously cached result if any; otherwise [].
     """
     cache_key = f"resources_newsroom_{limit}"
     cached = get(cache_key)
-    if cached is not None:
-        return cached
     items = await fetch_corpay_resources_newsroom(limit=limit)
+    if not items:
+        return cached if cached is not None else []
     result = [NewsroomItemResponse(id=idx, **item) for idx, item in enumerate(items)]
     set(cache_key, result, ttl_seconds=300)
     return result

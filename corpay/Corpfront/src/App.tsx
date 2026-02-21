@@ -93,10 +93,6 @@ const pieData = [
   { category: 'Lodging', percentage: 25, color: '#E6E8E7' },
 ];
 
-// Fallback when resources API returns empty or fails
-const fallbackResources: Array<{ title: string; url: string; date?: string; category?: string; excerpt?: string }> = [];
-
-
 
 
 
@@ -388,7 +384,7 @@ export default function App() {
                 if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
                   avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
-                  const base = apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
+                  const base = apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8080';
                   avatarUrl = `${String(base).replace(/\/+$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
                 }
               }
@@ -467,9 +463,7 @@ export default function App() {
           // #endregion agent log
           const data = resourcesRes.value.data;
           const list = Array.isArray(data) ? data : [];
-          setResourceItems(list.length > 0 ? list : fallbackResources);
-        } else {
-          setResourceItems(fallbackResources);
+          setResourceItems((prev) => (list.length > 0 ? list : prev));
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -762,7 +756,7 @@ export default function App() {
                 if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
                   avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
-                  const base = apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
+                  const base = apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8080';
                   avatarUrl = `${String(base).replace(/\/+$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
                 }
               }
@@ -1329,16 +1323,20 @@ export default function App() {
                   className="overflow-y-auto overflow-x-hidden flex-1 min-h-0 rounded space-y-4 scrollbar-hide"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  {(Array.isArray(resourceItems) && resourceItems.length > 0 ? resourceItems.slice(0, 8) : fallbackResources).map((item, index) => (
-                    <ResourceCard
-                      key={'id' in item && item.id != null ? String(item.id) : index}
-                      title={item.title || 'Resource'}
-                      description={item.excerpt || ''}
-                      type={index % 2 === 0 ? 'case-study' : 'whitepaper'}
-                      resourceId={'id' in item && typeof (item as { id?: unknown }).id !== 'undefined' ? (item as { id: number }).id : undefined}
-                      url={item.url || undefined}
-                    />
-                  ))}
+                  {Array.isArray(resourceItems) && resourceItems.length > 0 ? (
+                    resourceItems.slice(0, 8).map((item, index) => (
+                      <ResourceCard
+                        key={'id' in item && item.id != null ? String(item.id) : index}
+                        title={item.title || 'Resource'}
+                        description={item.excerpt || ''}
+                        type={index % 2 === 0 ? 'case-study' : 'whitepaper'}
+                        resourceId={undefined}
+                        url={item.url && String(item.url).trim() ? item.url : undefined}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-sm" style={{ color: '#6b7280' }}>Resources will appear here once fetched from the web.</p>
+                  )}
                 </div>
               </div>
             </div>
