@@ -8,7 +8,7 @@ import { CompanyAnnouncement } from './components/CompanyAnnouncement';
 import { NewsroomCard } from './components/NewsroomCard';
 import { ResourceCard } from './components/ResourceCard';
 import { FullScreenSlideshow } from './components/FullScreenSlideshow';
-import { dashboardApi } from './services/api';
+import { dashboardApi, apiBaseURL } from './services/api';
 import corpayLogo from './assets/895e861462df910e5a72623a9b8e8a744f2ab348.png';
 import crossBorderGlimpse from './assets/aaf95357c3595e79ededa176ac81f9fc76f886b5.png';
 import backgroundPattern from './assets/8a99135dee321789a4c9c35b37279ec88120fc47.png';
@@ -551,7 +551,7 @@ export default function App() {
                 if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
                   avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
-                  const base = (await import('./services/api')).apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
+                  const base = apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
                   avatarUrl = `${String(base).replace(/\/+$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
                 }
               }
@@ -925,7 +925,7 @@ export default function App() {
                 if (bucketPublicUrl && String(bucketPublicUrl).trim()) {
                   avatarUrl = `${String(bucketPublicUrl).replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
                 } else {
-                  const base = (await import('./services/api')).apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
+                  const base = apiBaseURL.replace(/\/api\/?$/, '') || 'http://localhost:8002';
                   avatarUrl = `${String(base).replace(/\/+$/, '')}/uploads/${path.replace(/^\/+/, '')}`;
                 }
               }
@@ -1250,7 +1250,7 @@ export default function App() {
                 </p>
                 <div className="flex items-center gap-1">
                   <span style={{ color: '#0085C2', fontSize: '16px', fontWeight: 600 }}>
-                    ▲ {sharePrice.change_percentage >= 0 ? '+' : ''}{sharePrice.change_percentage.toFixed(2)}%
+                    {sharePrice.change_percentage >= 0 ? '▲' : '▼'} {sharePrice.change_percentage >= 0 ? '+' : ''}{sharePrice.change_percentage.toFixed(2)}%
                   </span>
                 </div>
               </div>
